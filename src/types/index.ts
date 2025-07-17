@@ -27,7 +27,7 @@ export interface Database {
 }
 
 // User Roles for Reproductive Health Support System
-export type UserRole = 'client' | 'counselor' | 'admin' | 'super_admin'
+export type UserRole = 'user' | 'counselor' | 'admin' | 'super_admin'
 
 // User Types
 export interface User {
@@ -35,7 +35,7 @@ export interface User {
   name?: string
   username?: string
   email: string
-  role: UserRole // Single role field to match database schema
+  roles: UserRole[] // Keep array for compatibility with existing code
   is_active: boolean
   created_at: string
   updated_at: string
@@ -428,7 +428,7 @@ export interface CreateResourceRequest {
 
 // Search and Filter Types
 export interface UserSearchFilters {
-  role?: UserRole
+  roles?: UserRole[]
   is_active?: boolean
   search?: string
   date_range?: {
@@ -510,7 +510,7 @@ export interface CreateUserForm {
   username?: string
   email: string
   password: string
-  role: UserRole
+  roles: UserRole[]
   phone?: string
   specializations?: string[]
   bio?: string
@@ -572,7 +572,7 @@ export interface CaseFilters {
 }
 
 export interface UserFilters {
-  role?: UserRole
+  roles?: UserRole[]
   is_active?: boolean
   specialization?: string
   search?: string

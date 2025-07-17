@@ -15,7 +15,7 @@
       <div class="sidebar-header">
         <div class="logo">
           <i class="fas fa-heart-pulse"></i>
-          <span v-show="!sidebarCollapsed || mobileMenuOpen">Rosie Rouge Admin</span>
+          <span v-show="!sidebarCollapsed || mobileMenuOpen">Rosie App Admin</span>
         </div>
         <button @click="toggleSidebar" class="sidebar-toggle">
           <i class="fas" :class="mobileMenuOpen ? 'fa-times' : 'fa-bars'"></i>
@@ -185,7 +185,7 @@ const pageTitle = computed(() => {
     analytics: 'Analytics',
     settings: 'Settings'
   }
-  return routeNameMap[route.name as string] || 'Rosie Rouge Admin'
+  return routeNameMap[route.name as string] || 'Rosie App Admin'
 })
 
 const showMobileOverlay = computed(() => {

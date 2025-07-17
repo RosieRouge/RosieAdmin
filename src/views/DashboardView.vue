@@ -4,7 +4,7 @@
       <!-- Welcome Section -->
       <div class="welcome-section">
         <div class="welcome-content">
-          <h1>Welcome to Rosie Rouge Admin</h1>
+          <h1>Welcome to Rosie App Admin</h1>
           <p>Reproductive Health Support Platform Dashboard</p>
           <div class="quick-stats">
             <div class="stat">

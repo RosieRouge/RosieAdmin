@@ -4,11 +4,11 @@
       <div class="login-card">
         <div class="login-header">
           <div class="rosie-logo">
-            <h1 class="rosie-title">Rosie Rouge</h1>
+            <h1 class="rosie-title">Rosie App</h1>
             <div class="rosie-subtitle">Reproductive Health Support</div>
           </div>
           <h2 class="login-title">Admin Panel</h2>
-          <p class="login-subtitle">Sign in to access Rosie Rouge admin dashboard</p>
+          <p class="login-subtitle">Sign in to access Rosie App admin dashboard</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="login-form">
@@ -51,7 +51,7 @@
             class="login-button"
           >
             <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-                          <i v-else class="fas fa-right-to-bracket"></i>
+            <i v-else class="fas fa-right-to-bracket"></i>
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </button>
         </form>
@@ -113,7 +113,7 @@ const handleLogin = async () => {
 <style scoped>
 .login-view {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--rosie-primary) 0%, var(--rosie-primary-dark) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,9 +128,10 @@ const handleLogin = async () => {
 .login-card {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-xl);
   padding: 2.5rem 2rem;
   backdrop-filter: blur(10px);
+  border: 1px solid var(--rosie-secondary);
 }
 
 .login-header {
@@ -141,20 +142,20 @@ const handleLogin = async () => {
 .rosie-logo {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #f1f3f4;
+  border-bottom: 2px solid var(--rosie-secondary);
 }
 
 .rosie-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #dc6bac;
+  color: var(--rosie-primary);
   margin: 0;
   font-family: 'Georgia', serif;
 }
 
 .rosie-subtitle {
   font-size: 0.9rem;
-  color: #7f8c8d;
+  color: var(--text-secondary);
   font-style: italic;
   margin-top: 0.25rem;
 }
@@ -162,12 +163,12 @@ const handleLogin = async () => {
 .login-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
 }
 
 .login-subtitle {
-  color: #7f8c8d;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   margin: 0;
   line-height: 1.5;
@@ -187,24 +188,24 @@ const handleLogin = async () => {
 
 .form-group label {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
 .form-input {
   padding: 0.875rem 1rem;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-lg);
   font-size: 1rem;
-  transition: all 0.2s;
-  background: #fafafa;
+  transition: var(--transition-normal);
+  background: var(--border-light);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--rosie-primary);
   background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
 }
 
 .form-input:disabled {
@@ -213,20 +214,20 @@ const handleLogin = async () => {
 }
 
 .form-input.error {
-  border-color: #e74c3c;
-  background: #fdf2f2;
+  border-color: var(--rosie-danger);
+  background: #fef2f2;
 }
 
 .error-message {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #e74c3c;
+  color: var(--rosie-danger);
   font-size: 0.9rem;
-  background: #fdf2f2;
+  background: #fef2f2;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #fadad7;
+  border-radius: var(--radius-lg);
+  border: 1px solid #fecaca;
 }
 
 .login-button {
@@ -235,20 +236,21 @@ const handleLogin = async () => {
   justify-content: center;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--rosie-primary) 0%, var(--rosie-primary-dark) 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--transition-normal);
   margin-top: 0.5rem;
 }
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 20px rgba(185, 28, 28, 0.3);
+  background: linear-gradient(135deg, var(--rosie-primary-dark) 0%, #7f1d1d 100%);
 }
 
 .login-button:disabled {
@@ -267,8 +269,8 @@ const handleLogin = async () => {
     padding: 2rem 1.5rem;
   }
   
-  .login-title {
-    font-size: 1.75rem;
+  .rosie-title {
+    font-size: 2rem;
   }
 }
 
