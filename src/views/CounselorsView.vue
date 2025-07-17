@@ -312,9 +312,9 @@
                 <div class="user-info">
                   <div class="user-name">{{ user.name || user.email.split('@')[0] }}</div>
                   <div class="user-email">{{ user.email }}</div>
-                                     <div class="user-roles">
-                     <span v-for="role in user.roles || []" :key="role" class="role-badge" :class="role">
-                       {{ formatRole(role) }}
+                   <div class="user-roles">
+                     <span class="role-badge" :class="user.role">
+                       {{ formatRole(user.role) }}
                      </span>
                    </div>
                 </div>
@@ -336,8 +336,8 @@
                 <div class="user-email">{{ selectedUser.email }}</div>
                                  <div class="current-roles">
                    Current roles: 
-                   <span v-for="role in selectedUser.roles || []" :key="role" class="role-badge" :class="role">
-                     {{ formatRole(role) }}
+                   <span class="role-badge" :class="selectedUser.role">
+                     {{ formatRole(selectedUser.role) }}
                    </span>
                  </div>
               </div>
@@ -500,7 +500,7 @@ const loadCounselors = async () => {
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
-      .contains('roles', ['counselor'])
+      .eq('role', 'counselor')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -615,8 +615,7 @@ const searchUsers = async () => {
 
     // Filter out users who already have counselor role
     availableUsers.value = (data || []).filter(user => {
-      const userRoles = user.roles || []
-      return !userRoles.includes('counselor')
+      return user.role !== 'counselor'
     })
   } catch (error: any) {
     console.error('Failed to search users:', error)
@@ -639,17 +638,8 @@ const addCounselorRole = async () => {
 
   loading.value = true
   try {
-    // Get current user roles
-    const currentRoles = selectedUser.value.roles || []
-    const newRoles = [...currentRoles]
-    
-    // Add counselor role if not already present
-    if (!newRoles.includes('counselor')) {
-      newRoles.push('counselor')
-    }
-
-    // Update user with new roles and counselor-specific data
-    const { error } = await authStore.updateUserRoles(selectedUser.value.id, newRoles)
+    // Update user role to counselor
+    const { error } = await authStore.updateUserRole(selectedUser.value.id, 'counselor')
     if (error) throw error
 
     // Update counselor-specific fields

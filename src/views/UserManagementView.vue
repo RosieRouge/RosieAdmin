@@ -6,6 +6,10 @@
         <p>Manage users for the abortion support platform</p>
       </div>
       <div class="header-actions">
+        <button @click="loadUsers" class="btn btn-info">
+          <i class="fas fa-sync-alt"></i>
+          <span>Refresh</span>
+        </button>
         <button @click="exportUsers" class="btn btn-secondary">
           <i class="fas fa-download"></i>
           <span>Export</span>
@@ -77,10 +81,10 @@
       <div class="filters">
         <select v-model="roleFilter" @change="applyFilters">
           <option value="">All Roles</option>
-          <option value="user">Users</option>
-          <option value="counselor">Counselors</option>
-          <option value="admin">Admins</option>
-          <option value="super_admin">Super Admins</option>
+          <option value="client">Client</option>
+          <option value="counselor">Counselor</option>
+          <option value="admin">Admin</option>
+          <option value="super_admin">Super Admin</option>
         </select>
         
         <select v-model="statusFilter" @change="applyFilters">
@@ -159,13 +163,13 @@
           
           <div class="mobile-user-details">
             <div class="mobile-detail-item">
-              <div class="mobile-detail-label">Roles</div>
+              <div class="mobile-detail-label">Role</div>
               <div class="mobile-detail-value">
-                <span v-if="!user.roles || user.roles.length === 0" class="role-badge user">
-                  User
+                <span v-if="!user.role" class="role-badge client">
+                  Client
                 </span>
-                <span v-else v-for="role in user.roles" :key="role" class="role-badge" :class="role">
-                  {{ formatRole(role) }}
+                <span v-else class="role-badge" :class="user.role">
+                  {{ formatRole(user.role) }}
                 </span>
               </div>
             </div>
@@ -251,11 +255,11 @@
             <td class="role-cell">
               <div class="role-management" @click="toggleRoleDropdown(user.id, $event)">
                 <div class="role-display">
-                  <span v-if="!user.roles || user.roles.length === 0" class="role-badge user">
-                    User
+                  <span v-if="!user.role" class="role-badge client">
+                    Client
                   </span>
-                  <span v-else v-for="role in user.roles" :key="role" class="role-badge" :class="role">
-                    {{ formatRole(role) }}
+                  <span v-else class="role-badge" :class="user.role">
+                    {{ formatRole(user.role) }}
                   </span>
                   <i class="fas fa-chevron-down role-dropdown-icon"></i>
                 </div>
@@ -271,10 +275,10 @@
                       :key="role.value"
                       class="role-dropdown-option"
                       :class="{ 
-                        active: user.roles?.includes(role.value),
+                        active: user.role === role.value,
                         disabled: !canModifyRole(user, role.value)
                       }"
-                      @click="handleRoleToggle(user, role.value)"
+                      @click="handleRoleChange(user, role.value)"
                     >
                       <div class="role-option-content">
                         <div class="role-option-left">
@@ -282,7 +286,7 @@
                           <span class="role-label">{{ role.label }}</span>
                         </div>
                         <div class="role-option-right">
-                          <i v-if="user.roles?.includes(role.value)" class="fas fa-check role-check"></i>
+                          <i v-if="user.role === role.value" class="fas fa-check role-check"></i>
                           <i v-else class="fas fa-plus role-plus"></i>
                           <i v-if="!canModifyRole(user, role.value)" class="fas fa-lock role-lock" title="Insufficient permissions"></i>
                         </div>
@@ -399,15 +403,15 @@
             </div>
             
             <div class="form-group">
-              <label>Roles *</label>
-              <div class="checkbox-group">
-                <label class="checkbox-label" v-for="role in roleOptions" :key="role.value" :class="{ disabled: !authStore.canAssignRole(role.value) }">
-                  <input type="checkbox" v-model="newUser.roles" :value="role.value" :disabled="!authStore.canAssignRole(role.value)" />
+              <label>Role *</label>
+              <div class="radio-group">
+                <label class="radio-label" v-for="role in roleOptions" :key="role.value" :class="{ disabled: !authStore.canAssignRole(role.value) }">
+                  <input type="radio" v-model="newUser.role" :value="role.value" :disabled="!authStore.canAssignRole(role.value)" />
                   {{ role.label }}
                   <i v-if="!authStore.canAssignRole(role.value)" class="fas fa-lock" title="Insufficient permissions to assign this role"></i>
                 </label>
               </div>
-              <small>Select one or more roles for this user</small>
+              <small>Select a role for this user</small>
             </div>
             
             <div class="form-group">
@@ -468,15 +472,15 @@
             </div>
             
             <div class="form-group">
-              <label>Roles *</label>
-              <div class="checkbox-group">
-                <label class="checkbox-label" v-for="role in roleOptions" :key="role.value" :class="{ disabled: !canModifyRole(editingUser!, role.value) }">
-                  <input type="checkbox" v-model="editingUser!.roles" :value="role.value" :disabled="!canModifyRole(editingUser!, role.value)" />
+              <label>Role *</label>
+              <div class="radio-group">
+                <label class="radio-label" v-for="role in roleOptions" :key="role.value" :class="{ disabled: !canModifyRole(editingUser!, role.value) }">
+                  <input type="radio" v-model="editingUser!.role" :value="role.value" :disabled="!canModifyRole(editingUser!, role.value)" />
                   {{ role.label }}
                   <i v-if="!canModifyRole(editingUser!, role.value)" class="fas fa-lock" title="Insufficient permissions to modify this role"></i>
                 </label>
               </div>
-              <small>Select one or more roles for this user</small>
+              <small>Select a role for this user</small>
             </div>
             
             <div class="form-group">
@@ -530,13 +534,13 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import type { User, UserRole } from '@/types'
 
 const authStore = useAuthStore()
 
 const users = ref<User[]>([])
 const loading = ref(false)
-const syncingUsers = ref(false)
 const roleFilter = ref('')
 const statusFilter = ref('')
 const sortBy = ref('created_at')
@@ -554,7 +558,7 @@ const newUser = ref({
   username: '',
   email: '',
   password: '',
-  roles: [] as UserRole[],
+  role: 'client' as UserRole,
   phone: '',
   bio: '',
   skip_email_verification: false
@@ -569,7 +573,7 @@ const toast = ref({
 })
 
 const roleOptions = [
-  { value: 'user' as UserRole, label: 'User' },
+  { value: 'client' as UserRole, label: 'Client' },
   { value: 'counselor' as UserRole, label: 'Counselor' },
   { value: 'admin' as UserRole, label: 'Admin' },
   { value: 'super_admin' as UserRole, label: 'Super Admin' }
@@ -577,8 +581,8 @@ const roleOptions = [
 
 const stats = computed(() => ({
   total: users.value.length,
-  counselors: users.value.filter(u => u.roles?.includes('counselor')).length,
-  admins: users.value.filter(u => u.roles?.includes('admin') || u.roles?.includes('super_admin')).length,
+  counselors: users.value.filter(u => u.role === 'counselor').length,
+  admins: users.value.filter(u => u.role === 'admin' || u.role === 'super_admin').length,
   active: users.value.filter(u => u.is_active).length
 }))
 
@@ -586,7 +590,7 @@ const filteredUsers = computed(() => {
   let filtered = users.value
 
   if (roleFilter.value) {
-    filtered = filtered.filter(u => u.roles?.includes(roleFilter.value as UserRole))
+    filtered = filtered.filter(u => u.role === roleFilter.value)
   }
 
   if (statusFilter.value) {
@@ -640,59 +644,44 @@ const visiblePages = computed(() => {
 const loadUsers = async () => {
   loading.value = true
   try {
-    console.log('Loading users from Supabase using admin client...')
-    console.log('Current user session:', await supabase.auth.getSession())
+    console.log('Loading users from Supabase...')
     
-    // Try to get the count first to see if RLS is blocking
-    const { count, error: countError } = await supabaseAdmin
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-    
-    console.log('Users table count:', count, 'Count error:', countError)
-    
-    const { data, error } = await supabaseAdmin
+    const { data, error, status, statusText } = await supabaseAdmin
       .from('users')
       .select('*')
       .order('created_at', { ascending: false })
 
-    console.log('Raw query result:', { data, error })
-    console.log('Data length:', data?.length)
-    console.log('Error details:', error)
+    console.log('Supabase response:', { data, error, status, statusText })
 
     if (error) {
       console.error('Error loading users:', error)
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
       showToast(`Failed to load users: ${error.message}`, 'error')
       users.value = []
     } else {
       console.log('Users loaded successfully:', data)
-      console.log('First user data:', data?.[0])
+      console.log('Number of users found:', data?.length || 0)
+      users.value = data || []
       
-      // Transform users to handle both old single role and new roles array
-      const transformedUsers = (data || []).map(user => {
-        let roles: UserRole[] = []
-        
-        if (user.roles && Array.isArray(user.roles)) {
-          // Handle existing roles array, normalize 'client' to 'user'
-          roles = user.roles.map((role: string) => role === 'client' ? 'user' : role)
-        } else if (user.role) {
-          // Handle old single 'role' field, normalize 'client' to 'user'
-          roles = [user.role === 'client' ? 'user' : user.role]
-        } else {
-          // Default to 'user' role
-          roles = ['user']
-        }
-        
-        return {
-          ...user,
-          roles
-        }
-      })
-      
-      console.log('Transformed user data:', transformedUsers[0])
-      users.value = transformedUsers
+      if (!data || data.length === 0) {
+        console.log('No users found in database')
+        showToast('No users found in database. You may need to create some users first.', 'success')
+      } else {
+        showToast(`Successfully loaded ${data.length} users!`, 'success')
+      }
     }
   } catch (error: any) {
     console.error('Failed to load users:', error)
+    console.error('Catch block error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
     showToast(`Failed to load users: ${error.message}`, 'error')
     users.value = []
   } finally {
@@ -701,7 +690,7 @@ const loadUsers = async () => {
 }
 
 const createUser = async () => {
-  if (!newUser.value.name || !newUser.value.email || !newUser.value.password || !newUser.value.roles.length) {
+  if (!newUser.value.name || !newUser.value.email || !newUser.value.password || !newUser.value.role) {
     showToast('Please fill in all required fields', 'error')
     return
   }
@@ -711,12 +700,11 @@ const createUser = async () => {
   try {
     console.log('Creating user with auth store...')
     
-    // Use the enhanced auth store method
     const { data, error } = await authStore.createUser(
       newUser.value.email,
       newUser.value.password,
       newUser.value.name,
-      newUser.value.roles,
+      newUser.value.role,
       {
         username: newUser.value.username,
         phone: newUser.value.phone,
@@ -773,9 +761,35 @@ const toggleUserStatus = async (user: User) => {
   }
 }
 
-// Missing functions
 const exportUsers = () => {
-  showToast('Export functionality not implemented yet', 'error')
+  try {
+    const dataToExport = users.value.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      is_active: user.is_active,
+      created_at: user.created_at
+    }))
+    
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "ID,Name,Email,Role,Active,Created At\n" +
+      dataToExport.map(user => 
+        `${user.id},${user.name || ''},${user.email},${user.role},${user.is_active},${user.created_at}`
+      ).join("\n")
+    
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    showToast('Users exported successfully', 'success')
+  } catch (error) {
+    showToast('Failed to export users', 'error')
+  }
 }
 
 const applyFilters = () => {
@@ -789,28 +803,60 @@ const clearFilters = () => {
   searchQuery.value = ''
 }
 
-const bulkAction = (action: string) => {
+const bulkAction = async (action: string) => {
   if (selectedUsers.value.length === 0) {
     showToast('No users selected', 'error')
     return
   }
   
-  if (action === 'activate' || action === 'deactivate') {
-    const newStatus = action === 'activate'
-    selectedUsers.value.forEach(userId => {
-      const userIndex = users.value.findIndex(u => u.id === userId)
-      if (userIndex !== -1) {
-        users.value[userIndex] = {
-          ...users.value[userIndex],
-          is_active: newStatus
-        }
-      }
-    })
-    showToast(`${selectedUsers.value.length} users ${action}d`, 'success')
-    selectedUsers.value = []
-    selectAll.value = false
-  } else if (action === 'export') {
-    showToast('Export functionality not implemented yet', 'error')
+  try {
+    if (action === 'activate' || action === 'deactivate') {
+      const newStatus = action === 'activate'
+      
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update({ 
+          is_active: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', selectedUsers.value)
+
+      if (error) throw error
+      
+      showToast(`${selectedUsers.value.length} users ${action}d`, 'success')
+      selectedUsers.value = []
+      selectAll.value = false
+      await loadUsers()
+    } else if (action === 'export') {
+      const usersToExport = users.value.filter(u => selectedUsers.value.includes(u.id))
+      const dataToExport = usersToExport.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        is_active: user.is_active,
+        created_at: user.created_at
+      }))
+      
+      const csvContent = "data:text/csv;charset=utf-8," + 
+        "ID,Name,Email,Role,Active,Created At\n" +
+        dataToExport.map(user => 
+          `${user.id},${user.name || ''},${user.email},${user.role},${user.is_active},${user.created_at}`
+        ).join("\n")
+      
+      const encodedUri = encodeURI(csvContent)
+      const link = document.createElement("a")
+      link.setAttribute("href", encodedUri)
+      link.setAttribute("download", `selected_users_export_${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      showToast(`${selectedUsers.value.length} users exported`, 'success')
+    }
+  } catch (error: any) {
+    console.error('Bulk action failed:', error)
+    showToast(`Failed to perform bulk action: ${error.message}`, 'error')
   }
 }
 
@@ -877,126 +923,66 @@ onUnmounted(() => {
   document.removeEventListener('click', closeDropdownOnClickOutside)
 })
 
-const handleRoleToggle = async (user: User, roleToToggle: UserRole) => {
+const handleRoleChange = async (user: User, newRole: UserRole) => {
   // Check permissions before allowing role change
-  if (!canModifyRole(user, roleToToggle)) {
-    const currentUserRoles = authStore.profile?.roles || []
-    const currentUserIsSuperAdmin = currentUserRoles.includes('super_admin')
-    const targetUserIsSuperAdmin = user.roles?.includes('super_admin') || false
-    const targetUserIsAdmin = user.roles?.includes('admin') || false
+  if (!canModifyRole(user, newRole)) {
+    const currentUserRole = authStore.profile?.role
     
     let errorMessage = 'You do not have permission to modify this role.'
     
     // Provide specific feedback based on the restriction
-    if (roleToToggle === 'super_admin' && !currentUserIsSuperAdmin) {
+    if (newRole === 'super_admin' && currentUserRole !== 'super_admin') {
       errorMessage = 'Only Super Admins can assign or remove Super Admin roles.'
-    } else if (roleToToggle === 'admin' && !currentUserIsSuperAdmin) {
+    } else if (newRole === 'admin' && currentUserRole !== 'super_admin') {
       errorMessage = 'Only Super Admins can assign or remove Admin roles.'
-    } else if (targetUserIsSuperAdmin && !currentUserIsSuperAdmin) {
+    } else if (user.role === 'super_admin' && currentUserRole !== 'super_admin') {
       errorMessage = 'Only Super Admins can modify the roles of other Super Admins.'
-    } else if (targetUserIsAdmin && !currentUserIsSuperAdmin) {
+    } else if (user.role === 'admin' && currentUserRole !== 'super_admin') {
       errorMessage = 'Only Super Admins can modify the roles of Admins.'
-    } else if (user.id === authStore.user?.id && !currentUserIsSuperAdmin) {
-      errorMessage = 'You cannot modify your own roles. Contact a Super Admin for role changes.'
+    } else if (user.id === authStore.user?.id && currentUserRole !== 'super_admin') {
+      errorMessage = 'You cannot modify your own role. Contact a Super Admin for role changes.'
     }
     
     showToast(errorMessage, 'error')
     return
   }
 
-  const currentRoles = user.roles || []
-  const hasRole = currentRoles.includes(roleToToggle)
   const userName = getUserDisplayName(user)
-  const roleName = formatRole(roleToToggle)
+  const oldRoleName = formatRole(user.role)
+  const newRoleName = formatRole(newRole)
   const isModifyingOwnRole = user.id === authStore.user?.id
-  const isSuperAdminRole = roleToToggle === 'super_admin'
   
-  let confirmMessage = ''
-  let newRoles = [...currentRoles]
+  let confirmMessage = `Are you sure you want to change ${userName}'s role from "${oldRoleName}" to "${newRoleName}"?`
   
-  if (hasRole) {
-    // Removing a role
-    confirmMessage = `Are you sure you want to remove the "${roleName}" role from ${userName}?`
-    
-    // Special warning for super admins removing their own super admin role
-    if (isModifyingOwnRole && isSuperAdminRole) {
-      confirmMessage = `⚠️ WARNING: You are about to remove your own Super Admin privileges!\n\nAre you sure you want to remove the "${roleName}" role from ${userName}?\n\nThis action will:\n• Remove your Super Admin access\n• Prevent you from managing other Super Admins\n• Potentially lock you out of certain admin functions\n\nThis action cannot be undone by yourself once completed.`
-    }
-    
-    newRoles = newRoles.filter(r => r !== roleToToggle)
-    
-    // If removing all non-user roles, user role will be added automatically
-    if (newRoles.length === 0 || (newRoles.length === 1 && newRoles[0] === 'user')) {
-      if (!newRoles.includes('user')) {
-        confirmMessage += '\n\nThis will automatically assign the "User" role as users must have at least one role.'
-      }
-    }
-  } else {
-    // Adding a role
-    confirmMessage = `Are you sure you want to give ${userName} the "${roleName}" role?`
-    
-    // Special warning for giving super admin role to others
-    if (isSuperAdminRole && !isModifyingOwnRole) {
-      confirmMessage = `⚠️ WARNING: You are about to grant Super Admin privileges!\n\nAre you sure you want to give ${userName} the "${roleName}" role?\n\nThis will allow them to:\n• Manage all users and roles\n• Access all admin functions\n• Remove or modify your Super Admin role\n\nOnly grant this role to trusted administrators.`
-    }
-    
-    // If adding any role to a user who only has 'user' role, remove 'user' role
-    if (currentRoles.includes('user') && roleToToggle !== 'user') {
-      newRoles = newRoles.filter(r => r !== 'user')
-      if (!confirmMessage.includes('automatically remove')) {
-        confirmMessage += '\n\nThis will automatically remove the "User" role since users cannot have both User and other roles.'
-      }
-    }
-    
-    newRoles.push(roleToToggle)
+  // Special warning for super admin role changes
+  if (newRole === 'super_admin' && !isModifyingOwnRole) {
+    confirmMessage = `⚠️ WARNING: You are about to grant Super Admin privileges!\n\nAre you sure you want to change ${userName}'s role to "${newRoleName}"?\n\nThis will allow them to:\n• Manage all users and roles\n• Access all admin functions\n• Remove or modify your Super Admin role\n\nOnly grant this role to trusted administrators.`
+  } else if (isModifyingOwnRole && user.role === 'super_admin' && newRole !== 'super_admin') {
+    confirmMessage = `⚠️ WARNING: You are about to remove your own Super Admin privileges!\n\nAre you sure you want to change your role from "${oldRoleName}" to "${newRoleName}"?\n\nThis action will:\n• Remove your Super Admin access\n• Prevent you from managing other Super Admins\n• Potentially lock you out of certain admin functions\n\nThis action cannot be undone by yourself once completed.`
   }
   
-  // Ensure business rules are followed
-  newRoles = applyRoleBusinessRules(newRoles)
-  
   if (confirm(confirmMessage)) {
-    await updateUserRoles(user, newRoles)
+    await updateUserRole(user, newRole)
   }
   
   roleDropdownOpen.value = null
 }
 
-const applyRoleBusinessRules = (roles: UserRole[]): UserRole[] => {
-  let newRoles = [...roles]
-  
-  // Rule 1: If 'user' role exists with other roles, remove 'user'
-  if (newRoles.includes('user') && newRoles.length > 1) {
-    newRoles = newRoles.filter(r => r !== 'user')
-  }
-  
-  // Rule 2: If no roles remain, add 'user' role
-  if (newRoles.length === 0) {
-    newRoles = ['user']
-  }
-  
-  return newRoles
-}
-
-const updateUserRoles = async (user: User, newRoles: UserRole[]) => {
+const updateUserRole = async (user: User, newRole: UserRole) => {
   try {
-    console.log('Updating user roles in database...', { userId: user.id, newRoles })
+    console.log('Updating user role in database...', { userId: user.id, newRole })
     
-    const { error } = await authStore.updateUserRoles(user.id, newRoles)
+    const { error } = await authStore.updateUserRole(user.id, newRole)
     if (error) throw error
 
-    showToast(`User roles updated successfully`, 'success')
+    showToast(`User role updated successfully`, 'success')
     
-    // Reload users to show the updated roles
+    // Reload users to show the updated role
     await loadUsers()
   } catch (error: any) {
     console.error('User role update failed:', error)
-    showToast(`Failed to update user roles: ${error.message}`, 'error')
+    showToast(`Failed to update user role: ${error.message}`, 'error')
   }
-}
-
-const toggleUserRole = async (user: User, roleToToggle: UserRole) => {
-  // This function is kept for backward compatibility but redirects to new handler
-  await handleRoleToggle(user, roleToToggle)
 }
 
 const editUser = (user: User) => {
@@ -1012,8 +998,8 @@ const updateUser = async () => {
   try {
     console.log('Updating user in database...')
     
-    // Update user roles using auth store
-    const { error: roleError } = await authStore.updateUserRoles(editingUser.value.id, editingUser.value.roles)
+    // Update user role using auth store
+    const { error: roleError } = await authStore.updateUserRole(editingUser.value.id, editingUser.value.role)
     if (roleError) throw roleError
 
     // Update other user fields
@@ -1074,8 +1060,8 @@ const deleteUser = async (user: User) => {
     try {
       console.log('Deleting user from database...')
       
-      // First delete from users table
-      const { error } = await supabase
+      // Delete from users table
+      const { error } = await supabaseAdmin
         .from('users')
         .delete()
         .eq('id', user.id)
@@ -1085,9 +1071,6 @@ const deleteUser = async (user: User) => {
         throw error
       }
 
-      // Note: We're not deleting from auth.users as that requires special admin privileges
-      // The user will still exist in auth but won't be able to use the app without a profile
-      
       showToast('User deleted successfully', 'success')
       
       // Reload users to show the updated list
@@ -1101,77 +1084,21 @@ const deleteUser = async (user: User) => {
 
 const closeCreateUser = () => {
   showCreateUser.value = false
-  newUser.value = { name: '', username: '', email: '', password: '', roles: [], phone: '', bio: '', skip_email_verification: false }
+  newUser.value = { 
+    name: '', 
+    username: '', 
+    email: '', 
+    password: '', 
+    role: 'client', 
+    phone: '', 
+    bio: '', 
+    skip_email_verification: false 
+  }
 }
 
 const closeEditUser = () => {
   showEditUser.value = false
   editingUser.value = null
-}
-
-const syncAuthUsers = async () => {
-  syncingUsers.value = true
-  try {
-    console.log('Syncing auth users to database...')
-    
-    // Get all auth users from Supabase Admin API
-    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
-    
-    if (authError) {
-      throw authError
-    }
-    
-    console.log(`Found ${authUsers.users.length} auth users`)
-    
-    let syncedCount = 0
-    let skippedCount = 0
-    
-    for (const authUser of authUsers.users) {
-      try {
-        // Check if user already exists in database
-        const { data: existingUser, error: checkError } = await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('id', authUser.id)
-          .single()
-        
-        if (existingUser) {
-          skippedCount++
-          continue // User already exists in database
-        }
-        
-        // Create user record in database with only required fields
-        const { error: insertError } = await supabaseAdmin
-          .from('users')
-          .insert({
-            id: authUser.id,
-            email: authUser.email || `auth_user_${authUser.id.slice(0, 8)}@temp.com`,
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || `User ${authUser.id.slice(0, 8)}`,
-            role: 'user', // Use singular 'role' field with 'user' as default value
-            is_active: true
-          })
-        
-        if (insertError) {
-          console.error(`Failed to sync user ${authUser.id}:`, insertError)
-        } else {
-          syncedCount++
-          console.log(`Synced user ${authUser.email} to database`)
-        }
-      } catch (error) {
-        console.error(`Error processing auth user ${authUser.id}:`, error)
-      }
-    }
-    
-    showToast(`Sync complete: ${syncedCount} users added, ${skippedCount} already existed`, 'success')
-    
-    // Reload users to show the synced users
-    await loadUsers()
-  } catch (error: any) {
-    console.error('Auth sync failed:', error)
-    showToast(`Failed to sync auth users: ${error.message}`, 'error')
-  } finally {
-    syncingUsers.value = false
-  }
 }
 
 const formatDate = (dateString: string) => {
@@ -1183,12 +1110,10 @@ const formatDate = (dateString: string) => {
 }
 
 const getLastActive = (user: User) => {
-  // Mock last active time
-  const lastActive = new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 7)
-  return lastActive.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  })
+  if (user.last_active) {
+    return formatDate(user.last_active)
+  }
+  return 'Never'
 }
 
 const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -1214,63 +1139,225 @@ const getUserDisplayEmail = (user: any) => {
 }
 
 // Check if current user can modify a specific role for another user
-const canModifyRole = (user: User, role: UserRole) => {
-  const currentUserRoles = authStore.profile?.roles || []
-  const currentUserIsSuperAdmin = currentUserRoles.includes('super_admin')
-  const currentUserIsAdmin = currentUserRoles.includes('admin')
+const canModifyRole = (user: User, newRole: UserRole) => {
+  const currentUserRole = authStore.profile?.role
   const isModifyingOwnRole = user.id === authStore.user?.id
-  const hasRole = user.roles?.includes(role) || false
   
-  const targetUserIsSuperAdmin = user.roles?.includes('super_admin') || false
-  const targetUserIsAdmin = user.roles?.includes('admin') || false
-  
-  // Rule 1: Only Super Admins can modify Super Admin roles (including their own)
-  if (role === 'super_admin') {
-    return currentUserIsSuperAdmin && authStore.canAssignRole(role)
+  // Rule 1: Only Super Admins can modify Super Admin roles
+  if (user.role === 'super_admin' || newRole === 'super_admin') {
+    return currentUserRole === 'super_admin' && authStore.canAssignRole(newRole)
   }
   
-  // Rule 2: Only Super Admins can modify roles of users who have Super Admin role
-  if (targetUserIsSuperAdmin) {
-    return currentUserIsSuperAdmin
+  // Rule 2: Only Super Admins can modify Admin roles
+  if (user.role === 'admin' || newRole === 'admin') {
+    return currentUserRole === 'super_admin' && authStore.canAssignRole(newRole)
   }
   
-  // Rule 3: Only Super Admins can assign/remove Admin roles
-  if (role === 'admin') {
-    return currentUserIsSuperAdmin && authStore.canAssignRole(role)
+  // Rule 3: Admins and Super Admins can modify Client and Counselor roles
+  if ((user.role === 'client' || user.role === 'counselor') && 
+      (newRole === 'client' || newRole === 'counselor')) {
+    return (currentUserRole === 'admin' || currentUserRole === 'super_admin') && authStore.canAssignRole(newRole)
   }
   
-  // Rule 4: Only Super Admins can modify roles of users who have Admin role
-  if (targetUserIsAdmin && !targetUserIsSuperAdmin) {
-    return currentUserIsSuperAdmin
+  // Rule 4: Super Admins can modify their own roles (with warnings)
+  if (isModifyingOwnRole && currentUserRole === 'super_admin') {
+    return authStore.canAssignRole(newRole)
   }
   
-  // Rule 5: Regular Admins can modify User and Counselor roles for non-admin users
-  if ((role === 'user' || role === 'counselor') && !targetUserIsAdmin && !targetUserIsSuperAdmin) {
-    if (currentUserIsSuperAdmin || currentUserIsAdmin) {
-      if (hasRole) {
-        return authStore.canRemoveRole(role)
-      } else {
-        return authStore.canAssignRole(role)
-      }
-    }
-  }
-  
-  // Rule 6: Super Admins can modify their own roles (with warnings)
-  if (isModifyingOwnRole && currentUserIsSuperAdmin) {
-    if (hasRole) {
-      return authStore.canRemoveRole(role)
-    } else {
-      return authStore.canAssignRole(role)
-    }
-  }
-  
-  // Rule 7: Non-super admins cannot modify their own roles
-  if (isModifyingOwnRole && !currentUserIsSuperAdmin) {
+  // Rule 5: Non-super admins cannot modify their own roles
+  if (isModifyingOwnRole && currentUserRole !== 'super_admin') {
     return false
   }
   
   // Default: deny access
   return false
+}
+
+const testDatabaseConnection = async () => {
+  try {
+    console.log('Testing database connection...')
+    
+    // Test basic connection
+    const { data: testData, error: testError } = await supabaseAdmin
+      .from('users')
+      .select('count')
+      .limit(1)
+
+    if (testError) {
+      console.error('Database connection test failed:', testError)
+      showToast(`Database connection failed: ${testError.message}`, 'error')
+      return false
+    }
+
+    console.log('Database connection successful')
+    showToast('Database connection successful!', 'success')
+    return true
+  } catch (error: any) {
+    console.error('Database connection test error:', error)
+    showToast(`Database test failed: ${error.message}`, 'error')
+    return false
+  }
+}
+
+const createTestUser = async () => {
+  try {
+    console.log('Creating test user...')
+    
+    const testUser = {
+      id: crypto.randomUUID(),
+      name: 'Test Admin User',
+      email: 'test.admin@example.com',
+      role: 'admin' as UserRole,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .insert([testUser])
+      .select()
+
+    if (error) {
+      console.error('Failed to create test user:', error)
+      showToast(`Failed to create test user: ${error.message}`, 'error')
+      return false
+    }
+
+    console.log('Test user created successfully:', data)
+    showToast('Test user created successfully!', 'success')
+    
+    // Reload users to show the new test user
+    await loadUsers()
+    return true
+  } catch (error: any) {
+    console.error('Test user creation error:', error)
+    showToast(`Test user creation failed: ${error.message}`, 'error')
+    return false
+  }
+}
+
+const testRLSAndPermissions = async () => {
+  try {
+    console.log('=== TESTING RLS AND PERMISSIONS ===')
+    
+    // Test 1: Basic count query
+    console.log('Test 1: Basic count query...')
+    const { count, error: countError } = await supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+    
+    console.log('Count result:', { count, countError })
+    
+    // Test 2: Query with specific columns
+    console.log('Test 2: Query with specific columns...')
+    const { data: specificData, error: specificError } = await supabaseAdmin
+      .from('users')
+      .select('id, email, name, role, is_active, created_at')
+    
+    console.log('Specific columns result:', { data: specificData, error: specificError, count: specificData?.length })
+    
+    // Test 3: Query all columns
+    console.log('Test 3: Query all columns...')
+    const { data: allData, error: allError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+    
+    console.log('All columns result:', { data: allData, error: allError, count: allData?.length })
+    
+    // Test 4: Try with RLS bypass (if service role)
+    console.log('Test 4: Service role permissions test...')
+    const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+    console.log('Has service role key:', !!serviceRoleKey)
+    console.log('Service role key (first 20 chars):', serviceRoleKey?.substring(0, 20))
+    
+    // Test 5: Check current user/session
+    const { data: sessionData } = await supabaseAdmin.auth.getSession()
+    console.log('Current session:', sessionData)
+    
+    showToast('RLS tests completed - check console for details', 'success')
+  } catch (error: any) {
+    console.error('RLS test error:', error)
+    showToast(`RLS test failed: ${error.message}`, 'error')
+  }
+}
+
+const loadAllUsersWithRLSBypass = async () => {
+  loading.value = true
+  try {
+    console.log('=== ATTEMPTING TO LOAD ALL USERS WITH RLS BYPASS ===')
+    
+    // Method 1: Try with service role client and explicit RLS bypass
+    console.log('Method 1: Service role with explicit headers...')
+    const { data: method1Data, error: method1Error } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    console.log('Method 1 result:', { data: method1Data, error: method1Error, count: method1Data?.length })
+    
+    if (method1Data && method1Data.length > 1) {
+      console.log('✅ Method 1 successful! Found all users.')
+      users.value = method1Data
+      showToast(`Successfully loaded ${method1Data.length} users!`, 'success')
+      return
+    }
+    
+    // Method 2: Try direct SQL approach (if supported)
+    console.log('Method 2: Trying rpc call...')
+    const { data: method2Data, error: method2Error } = await supabaseAdmin
+      .rpc('get_all_users_admin')
+    
+    console.log('Method 2 result:', { data: method2Data, error: method2Error })
+    
+    if (!method2Error && method2Data && method2Data.length > 1) {
+      console.log('✅ Method 2 successful! Found all users via RPC.')
+      users.value = method2Data
+      showToast(`Successfully loaded ${method2Data.length} users via RPC!`, 'success')
+      return
+    }
+    
+    // Method 3: Try creating a new admin client with different config
+    console.log('Method 3: Creating fresh admin client...')
+    const freshAdminClient = createClient(
+      import.meta.env.VITE_SUPABASE_URL,
+      import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+    
+    const { data: method3Data, error: method3Error } = await freshAdminClient
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    console.log('Method 3 result:', { data: method3Data, error: method3Error, count: method3Data?.length })
+    
+    if (method3Data && method3Data.length > 0) {
+      console.log('✅ Method 3 successful! Found users with fresh client.')
+      users.value = method3Data
+      showToast(`Successfully loaded ${method3Data.length} users with fresh client!`, 'success')
+      return
+    }
+    
+    // If all methods fail, show diagnostic info
+    console.log('❌ All methods failed. Showing diagnostic info...')
+    showToast('All RLS bypass methods failed. Check console for details.', 'error')
+    
+    // Fall back to regular method
+    await loadUsers()
+    
+  } catch (error: any) {
+    console.error('RLS bypass failed:', error)
+    showToast(`RLS bypass failed: ${error.message}`, 'error')
+    users.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
@@ -1619,7 +1706,7 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.role-indicator.user {
+.role-indicator.client {
   background: #3b82f6;
 }
 
@@ -1676,7 +1763,7 @@ onMounted(() => {
   line-height: 1.2;
 }
 
-.role-badge.user {
+.role-badge.client {
   background: #dbeafe;
   color: #1e40af;
 }
@@ -1736,16 +1823,19 @@ onMounted(() => {
   background: none;
 }
 
-.checkbox-label.disabled {
+.checkbox-label.disabled,
+.radio-label.disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.checkbox-label.disabled input {
+.checkbox-label.disabled input,
+.radio-label.disabled input {
   cursor: not-allowed;
 }
 
-.checkbox-label .fas.fa-lock {
+.checkbox-label .fas.fa-lock,
+.radio-label .fas.fa-lock {
   color: #999;
   font-size: 0.8rem;
   margin-left: 0.5rem;
@@ -1911,14 +2001,16 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-.checkbox-group {
+.checkbox-group,
+.radio-group {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-.checkbox-label {
+.checkbox-label,
+.radio-label {
   display: flex !important;
   align-items: center;
   gap: 0.5rem;
@@ -1927,7 +2019,8 @@ onMounted(() => {
   margin-bottom: 0;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type="checkbox"],
+.radio-label input[type="radio"] {
   width: auto;
   margin: 0;
 }
@@ -2559,5 +2652,68 @@ onMounted(() => {
     width: 100%;
     min-width: auto;
   }
+}
+
+/* Additional button styles */
+.btn.btn-info {
+  background: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+}
+
+.btn.btn-info:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.btn.btn-warning {
+  background: #f59e0b;
+  color: white;
+  border: 1px solid #f59e0b;
+}
+
+.btn.btn-warning:hover {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.btn.btn-success {
+  background: #10b981;
+  color: white;
+  border: 1px solid #10b981;
+}
+
+.btn.btn-success:hover {
+  background: #047857;
+  border-color: #047857;
+}
+
+/* Empty state styling */
+.empty-state-note {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: #856404;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.empty-state-note i {
+  color: #f59e0b;
+  margin-right: 0.5rem;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.empty-state-actions .btn {
+  min-width: 120px;
 }
 </style> 

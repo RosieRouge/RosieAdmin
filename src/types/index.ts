@@ -27,7 +27,7 @@ export interface Database {
 }
 
 // User Roles for Reproductive Health Support System
-export type UserRole = 'user' | 'counselor' | 'admin' | 'super_admin'
+export type UserRole = 'client' | 'counselor' | 'admin' | 'super_admin'
 
 // User Types
 export interface User {
@@ -35,17 +35,27 @@ export interface User {
   name?: string
   username?: string
   email: string
-  roles: UserRole[] // Array of roles - user is exclusive, others can combine
+  role: UserRole // Single role field to match database schema
   is_active: boolean
   created_at: string
   updated_at: string
   
-  // Counselor specific fields
-  phone?: string
+  // Profile fields from database schema
+  avatar?: string
   bio?: string
+  phone?: string
+  location?: any
+  privacy_settings?: any
+  panic_mode?: boolean
+  emergency_contacts?: any
+  social_links?: any
+  last_active?: string
+  is_verified?: boolean
+  deleted_at?: string
+  
+  // Counselor specific fields (extended)
   license_number?: string
   specializations?: string[]
-  avatar?: string
   active_cases?: number
   rating?: number
   avg_response_time?: string
@@ -102,21 +112,26 @@ export interface SupportCase {
   status: CaseStatus
   urgency: UrgencyLevel
   
-  // Case assignment
+  // Case assignment (matching database schema)
   client_id: string
   assigned_counselor_id?: string
+  assigned_admin_id?: string
   
-  // Case metadata
-  is_crisis: boolean
-  is_anonymous: boolean
-  client_age_group?: 'minor' | 'adult' | 'not_specified'
-  estimated_timeline?: string
+  // Case metadata (matching database schema)
+  location?: any
+  metadata?: any
+  internal_notes?: any[]
   
-  // Timestamps
+  // Legacy fields for compatibility (TODO: remove after refactoring)
+  is_crisis?: boolean
+  is_anonymous?: boolean
+  
+  // Timestamps (matching database schema)
   created_at: string
-  updated_at: string
   assigned_at?: string
-  resolved_at?: string
+  completed_at?: string
+  closed_at?: string
+  deleted_at?: string
   
   // Notes and communication
   notes?: CaseNote[]
@@ -413,7 +428,7 @@ export interface CreateResourceRequest {
 
 // Search and Filter Types
 export interface UserSearchFilters {
-  roles?: UserRole[]
+  role?: UserRole
   is_active?: boolean
   search?: string
   date_range?: {
@@ -495,7 +510,7 @@ export interface CreateUserForm {
   username?: string
   email: string
   password: string
-  roles: UserRole[]
+  role: UserRole
   phone?: string
   specializations?: string[]
   bio?: string
@@ -557,7 +572,7 @@ export interface CaseFilters {
 }
 
 export interface UserFilters {
-  roles?: UserRole[]
+  role?: UserRole
   is_active?: boolean
   specialization?: string
   search?: string

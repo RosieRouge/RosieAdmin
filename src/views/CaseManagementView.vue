@@ -365,10 +365,10 @@ const toast = ref({
 
 // Computed properties
 const stats = computed(() => ({
-  crisis: cases.value.filter(c => c.is_crisis && ['pending', 'assigned', 'in_progress'].includes(c.status)).length,
+  crisis: cases.value.filter(c => c.urgency === 'crisis' && ['pending', 'assigned', 'in_progress'].includes(c.status)).length,
   pending: cases.value.filter(c => c.status === 'pending').length,
   inProgress: cases.value.filter(c => c.status === 'in_progress').length,
-  resolved: cases.value.filter(c => c.status === 'resolved' && isThisWeek(c.completed_at)).length
+  resolved: cases.value.filter(c => c.status === 'resolved' && c.completed_at && isThisWeek(c.completed_at)).length
 }))
 
 const filteredCases = computed(() => {
@@ -405,10 +405,11 @@ const filteredCases = computed(() => {
 
   // Sort by urgency and creation date
   return filtered.sort((a, b) => {
-    if (a.is_crisis && !b.is_crisis) return -1
-    if (!a.is_crisis && b.is_crisis) return 1
+    // Crisis urgency comes first
+    if (a.urgency === 'crisis' && b.urgency !== 'crisis') return -1
+    if (a.urgency !== 'crisis' && b.urgency === 'crisis') return 1
     
-    const urgencyOrder = ['crisis', 'urgent', 'high', 'medium', 'low']
+    const urgencyOrder = ['crisis', 'high', 'medium', 'low']
     const aUrgency = urgencyOrder.indexOf(a.urgency)
     const bUrgency = urgencyOrder.indexOf(b.urgency)
     
@@ -425,96 +426,72 @@ const availableCounselors = computed(() => {
 // Methods
 const loadCases = async () => {
   loading.value = true
-  // Use mock data directly to avoid 404 errors
-  cases.value = [
-    {
-      id: 'case-001',
-      title: 'Emergency Contraception Support',
-      client: { id: 'client-001', name: 'Sarah M.', email: 'sarah@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      type: 'abortion_support' as CaseType,
-      urgency: 'crisis' as UrgencyLevel,
-      status: 'pending' as CaseStatus,
-      is_crisis: true,
-      assigned_counselor: undefined,
-      assigned_counselor_id: undefined,
-      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      completed_at: undefined
-    },
-    {
-      id: 'case-002',
-      title: 'Pregnancy Options Consultation',
-      client: { id: 'client-002', name: 'Maria L.', email: 'maria@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      type: 'pregnancy_options' as CaseType,
-      urgency: 'urgent' as UrgencyLevel,
-      status: 'assigned' as CaseStatus,
-      is_crisis: false,
-      assigned_counselor: { id: 'counselor-001', name: 'Dr. Sarah Johnson', email: 'sarah.johnson@example.com', role: 'counselor' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      assigned_counselor_id: 'counselor-001',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      completed_at: undefined
-    },
-    {
-      id: 'case-003',
-      title: 'Emotional Support Session',
-      client: { id: 'client-003', name: 'Jennifer K.', email: 'jennifer@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      type: 'emotional_support' as CaseType,
-      urgency: 'medium' as UrgencyLevel,
-      status: 'in_progress' as CaseStatus,
-      is_crisis: false,
-      assigned_counselor: { id: 'counselor-002', name: 'Dr. Maria Rodriguez', email: 'maria.rodriguez@example.com', role: 'counselor' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      assigned_counselor_id: 'counselor-002',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-      completed_at: undefined
-    },
-    {
-      id: 'case-004',
-      title: 'Legal Consultation',
-      client: { id: 'client-004', name: 'Amanda R.', email: 'amanda@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      type: 'legal_consultation' as CaseType,
-      urgency: 'high' as UrgencyLevel,
-      status: 'resolved' as CaseStatus,
-      is_crisis: false,
-      assigned_counselor: { id: 'counselor-003', name: 'Dr. Jennifer Kim', email: 'jennifer.kim@example.com', role: 'counselor' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      assigned_counselor_id: 'counselor-003',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      completed_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-    },
-    {
-      id: 'case-005',
-      title: 'Financial Assistance Request',
-      client: { id: 'client-005', name: 'Lisa T.', email: 'lisa@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      type: 'financial_assistance' as CaseType,
-      urgency: 'medium' as UrgencyLevel,
-      status: 'pending' as CaseStatus,
-      is_crisis: false,
-      assigned_counselor: undefined,
-      assigned_counselor_id: undefined,
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-      completed_at: undefined
+  try {
+    const { data, error } = await supabase
+      .from('support_cases')
+      .select(`
+        *,
+        client:users!client_id(*),
+        assigned_counselor:users!assigned_counselor_id(*)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error loading cases:', error)
+      showToast('Failed to load cases', 'error')
+      cases.value = []
+    } else {
+      cases.value = data || []
     }
-  ] as SupportCase[]
-  loading.value = false
+  } catch (error: any) {
+    console.error('Failed to load cases:', error)
+    showToast('Failed to load cases', 'error')
+    cases.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 const loadCounselors = async () => {
-  // Use mock data directly to avoid 404 errors
-  counselors.value = [
-    { id: 'counselor-001', name: 'Dr. Sarah Johnson', email: 'sarah.johnson@example.com', role: 'counselor' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_cases: 2 },
-    { id: 'counselor-002', name: 'Dr. Maria Rodriguez', email: 'maria.rodriguez@example.com', role: 'counselor' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_cases: 1 },
-    { id: 'counselor-003', name: 'Dr. Jennifer Kim', email: 'jennifer.kim@example.com', role: 'counselor' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_cases: 3 },
-    { id: 'counselor-004', name: 'Dr. Amanda Chen', email: 'amanda.chen@example.com', role: 'counselor' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), active_cases: 0 }
-  ]
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'counselor')
+      .eq('is_active', true)
+      .order('name')
+
+    if (error) {
+      console.error('Error loading counselors:', error)
+      counselors.value = []
+    } else {
+      counselors.value = data || []
+    }
+  } catch (error: any) {
+    console.error('Failed to load counselors:', error)
+    counselors.value = []
+  }
 }
 
 const loadClients = async () => {
-  // Use mock data directly to avoid 404 errors
-  clients.value = [
-    { id: 'client-001', name: 'Sarah M.', email: 'sarah@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'client-002', name: 'Maria L.', email: 'maria@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'client-003', name: 'Jennifer K.', email: 'jennifer@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'client-004', name: 'Amanda R.', email: 'amanda@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'client-005', name: 'Lisa T.', email: 'lisa@example.com', role: 'client' as const, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-  ]
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'client')
+      .eq('is_active', true)
+      .order('name')
+
+    if (error) {
+      console.error('Error loading clients:', error)
+      clients.value = []
+    } else {
+      clients.value = data || []
+    }
+  } catch (error: any) {
+    console.error('Failed to load clients:', error)
+    clients.value = []
+  }
 }
 
 const refreshCases = async () => {
@@ -523,8 +500,21 @@ const refreshCases = async () => {
 }
 
 const viewCase = (case_: SupportCase) => {
-  // Implement case detail view
-  console.log('View case:', case_)
+  // Navigate to case detail view or open case detail modal
+  // For now, we'll show case information in a simple alert
+  const details = `
+Case ID: ${case_.id}
+Title: ${case_.title}
+Client: ${case_.client?.name || 'Anonymous'}
+Type: ${formatCaseType(case_.type)}
+Urgency: ${formatUrgency(case_.urgency)}
+Status: ${formatStatus(case_.status)}
+Assigned Counselor: ${case_.assigned_counselor?.name || 'Unassigned'}
+Created: ${formatDate(case_.created_at)}
+Description: ${case_.description || 'No description'}
+  `.trim()
+  
+  alert(details)
 }
 
 const openAssignModal = (case_: SupportCase) => {
@@ -546,53 +536,102 @@ const assignCase = async () => {
 
   loading.value = true
   
-  // Mock assignment - update the case in memory
-  const caseIndex = cases.value.findIndex(c => c.id === selectedCase.value!.id)
-  if (caseIndex !== -1) {
-    const counselor = counselors.value.find(c => c.id === selectedCounselorId.value)
-    cases.value[caseIndex] = {
-      ...cases.value[caseIndex],
-      assigned_counselor_id: selectedCounselorId.value,
-      assigned_counselor: counselor,
-      status: 'assigned' as CaseStatus
-    }
-  }
+  try {
+    const { error } = await supabase
+      .from('support_cases')
+      .update({ assigned_counselor_id: selectedCounselorId.value })
+      .eq('id', selectedCase.value!.id)
 
-  showToast('Case assigned successfully')
-  closeAssignModal()
-  loading.value = false
+    if (error) {
+      console.error('Error assigning case:', error)
+      showToast('Failed to assign case', 'error')
+    } else {
+      // Update the case in the local array
+      const caseIndex = cases.value.findIndex(c => c.id === selectedCase.value!.id)
+      if (caseIndex !== -1) {
+        const counselor = counselors.value.find(c => c.id === selectedCounselorId.value)
+        cases.value[caseIndex] = {
+          ...cases.value[caseIndex],
+          assigned_counselor_id: selectedCounselorId.value,
+          assigned_counselor: counselor,
+          status: 'assigned' as CaseStatus
+        }
+      }
+      showToast('Case assigned successfully')
+    }
+  } catch (error: any) {
+    console.error('Failed to assign case:', error)
+    showToast('Failed to assign case', 'error')
+  } finally {
+    loading.value = false
+    closeAssignModal()
+  }
 }
 
 const escalateCase = async (case_: SupportCase) => {
-  // Implement crisis escalation
-  showToast(`Crisis case ${case_.id.slice(0, 8)} escalated to emergency response team`)
+  try {
+    // Update case status to escalated
+    const { error } = await supabase
+      .from('support_cases')
+      .update({ 
+        status: 'escalated',
+        urgency: 'crisis'
+      })
+      .eq('id', case_.id)
+
+    if (error) {
+      console.error('Error escalating case:', error)
+      showToast('Failed to escalate case', 'error')
+    } else {
+      // Update local case
+      const caseIndex = cases.value.findIndex(c => c.id === case_.id)
+      if (caseIndex !== -1) {
+        cases.value[caseIndex].status = 'escalated'
+        cases.value[caseIndex].urgency = 'crisis'
+      }
+      showToast(`Crisis case ${case_.id.slice(0, 8)} escalated to emergency response team`)
+    }
+  } catch (error: any) {
+    console.error('Failed to escalate case:', error)
+    showToast('Failed to escalate case', 'error')
+  }
 }
 
 const createCase = async () => {
   loading.value = true
   
-  // Mock case creation - add to memory
-  const client = clients.value.find(c => c.id === newCase.value.client_id)
-  const newCaseData = {
-    id: `case-${Date.now()}`,
-    title: newCase.value.title,
-    client: client,
-    type: newCase.value.type,
-    urgency: newCase.value.urgency,
-    status: 'pending' as CaseStatus,
-    is_crisis: newCase.value.is_crisis,
-    assigned_counselor: undefined,
-    assigned_counselor_id: undefined,
-    created_at: new Date().toISOString(),
-    completed_at: undefined,
-    description: newCase.value.description
-  }
-  
-  cases.value.unshift(newCaseData as SupportCase)
+  try {
+    const { error } = await supabase
+      .from('support_cases')
+      .insert({
+        id: `case-${Date.now()}`,
+        title: newCase.value.title,
+        client_id: newCase.value.client_id,
+        type: newCase.value.type,
+        urgency: newCase.value.urgency,
+        status: 'pending' as CaseStatus,
+        is_crisis: newCase.value.is_crisis,
+        assigned_counselor_id: undefined,
+        assigned_counselor: undefined,
+        created_at: new Date().toISOString(),
+        completed_at: undefined,
+        description: newCase.value.description
+      })
 
-  showToast('Case created successfully')
-  closeCreateModal()
-  loading.value = false
+    if (error) {
+      console.error('Error creating case:', error)
+      showToast('Failed to create case', 'error')
+    } else {
+      await loadCases() // Reload cases to include the new one
+      showToast('Case created successfully')
+    }
+  } catch (error: any) {
+    console.error('Failed to create case:', error)
+    showToast('Failed to create case', 'error')
+  } finally {
+    loading.value = false
+    closeCreateModal()
+  }
 }
 
 const closeCreateModal = () => {

@@ -7,4 +7,14 @@ const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Admin client with service role key for admin operations
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey) 
+// Using configuration that prevents session interference
+export const supabaseAdmin = createClient(
+  supabaseUrl, 
+  supabaseServiceKey || supabaseAnonKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+) 
