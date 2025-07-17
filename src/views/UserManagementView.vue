@@ -1367,58 +1367,74 @@ onMounted(() => {
 
 <style scoped>
 .user-management {
-  padding: 2rem;
+  padding: clamp(1rem, 4vw, 2rem);
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  align-items: flex-start;
+  margin-bottom: clamp(1.5rem, 3vw, 2rem);
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .header-left {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  flex: 1;
 }
 
 .header h1 {
   color: #B91C1C;
   margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.2;
 }
 
 .header p {
   color: #666;
-  margin: 0;
+  margin: 0.25rem 0 0 0;
+  font-size: clamp(0.875rem, 2vw, 1rem);
 }
 
-
+.header-actions {
+  display: flex;
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+  flex-wrap: wrap;
+  align-items: center;
+}
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: clamp(0.75rem, 2vw, 1rem);
+  margin-bottom: clamp(1.5rem, 3vw, 2rem);
 }
 
 .stat-card {
   background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: clamp(6px, 1vw, 8px);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.75rem, 1.5vw, 1rem);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  min-height: 70px;
 }
 
 .stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: clamp(32px, 5vw, 40px);
+  height: clamp(32px, 5vw, 40px);
+  border-radius: clamp(6px, 1vw, 8px);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  flex-shrink: 0;
 }
 
 .stat-icon.user { background: #3b82f6; }
@@ -1426,59 +1442,79 @@ onMounted(() => {
 .stat-icon.admin { background: #B91C1C; }
 .stat-icon.active { background: #8b5cf6; }
 
+.stat-content {
+  min-width: 0;
+  flex: 1;
+}
+
 .stat-content h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
   color: #B91C1C;
+  line-height: 1.2;
 }
 
 .stat-content p {
   margin: 0;
   color: #666;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  font-weight: 500;
 }
 
 .stat-content small {
   display: block;
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 1.25vw, 0.8rem);
   color: #666;
+  margin-top: 0.125rem;
 }
 
 .filters-section {
   background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  border-radius: clamp(6px, 1vw, 8px);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  margin-bottom: clamp(1.5rem, 3vw, 2rem);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: clamp(0.75rem, 1.5vw, 1rem);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .search-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+  width: 100%;
 }
 
 .search-bar i {
   color: #B91C1C;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  flex-shrink: 0;
 }
 
 .search-bar input {
-  padding: 0.5rem;
+  padding: clamp(0.5rem, 1.5vw, 0.75rem);
   border: 1px solid #F8C9C9;
-  border-radius: 4px;
+  border-radius: clamp(4px, 0.5vw, 6px);
+  width: 100%;
+  flex: 1;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
 }
 
 .filters {
   display: flex;
-  gap: 1rem;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .filters select {
-  padding: 0.5rem;
+  padding: clamp(0.5rem, 1.5vw, 0.75rem);
   border: 1px solid #F8C9C9;
-  border-radius: 4px;
+  border-radius: clamp(4px, 0.5vw, 6px);
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  min-width: 120px;
+  flex: 1;
 }
 
 .clear-filters-btn {
@@ -1496,32 +1532,34 @@ onMounted(() => {
 
 .table-container {
   background: white;
-  border-radius: 8px;
+  border-radius: clamp(6px, 1vw, 8px);
   overflow-x: auto;
   overflow-y: visible;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: relative;
+  margin-bottom: clamp(1rem, 2vw, 1.5rem);
 }
 
 .users-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 1200px;
+  min-width: clamp(900px, 80vw, 1200px);
 }
 
 .users-table th {
   background: #F8C9C9;
-  padding: 1.5rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
   text-align: left;
   font-weight: 600;
   color: #B91C1C;
-  font-size: 0.95rem;
+  font-size: clamp(0.875rem, 1.5vw, 0.95rem);
   letter-spacing: 0.025em;
+  white-space: nowrap;
 }
 
 .users-table td {
-  padding: 1.75rem 1.5rem;
+  padding: clamp(1rem, 2.5vw, 1.75rem) clamp(0.75rem, 2vw, 1.5rem);
   border-bottom: 1px solid #f0f0f0;
   vertical-align: top;
   line-height: 1.6;
@@ -1945,39 +1983,45 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: clamp(0.5rem, 2vw, 1rem);
 }
 
 .modal {
   background: white;
-  border-radius: 8px;
+  border-radius: clamp(8px, 1.5vw, 12px);
   width: 100%;
-  max-width: 500px;
-  margin: 1rem;
+  max-width: clamp(400px, 90vw, 500px);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
 }
 
 .modal-header {
-  padding: 1.5rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
   margin: 0;
   color: #B91C1C;
+  font-size: clamp(1.1rem, 2.5vw, 1.25rem);
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
   cursor: pointer;
   color: #666;
+  min-width: clamp(32px, 6vw, 40px);
+  min-height: clamp(32px, 6vw, 40px);
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
 }
 
 .form-group {
@@ -2070,34 +2114,43 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: clamp(0.75rem, 2vw, 1rem);
   background: white;
   border-top: 1px solid #f0f0f0;
+  gap: clamp(0.5rem, 1vw, 1rem);
+  flex-wrap: wrap;
 }
 
 .pagination-info {
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   color: #666;
+  text-align: center;
+  flex: 1 1 100%;
+  order: 2;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: clamp(0.25rem, 1vw, 0.5rem);
+  flex: 1 1 100%;
+  justify-content: center;
+  order: 1;
 }
 
 .pagination-btn {
-  padding: 0.5rem;
+  padding: clamp(0.375rem, 1vw, 0.5rem);
   border: 1px solid #ddd;
   background: white;
-  border-radius: 4px;
+  border-radius: clamp(4px, 0.5vw, 6px);
   cursor: pointer;
   color: #666;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: clamp(36px, 8vw, 44px);
+  min-height: clamp(36px, 8vw, 44px);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: clamp(0.8rem, 1.25vw, 0.9rem);
 }
 
 .pagination-btn:disabled {
@@ -2111,21 +2164,22 @@ onMounted(() => {
 
 .page-numbers {
   display: flex;
-  gap: 0.25rem;
+  gap: clamp(0.125rem, 0.5vw, 0.25rem);
 }
 
 .page-btn {
-  padding: 0.5rem 0.75rem;
+  padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.25vw, 0.75rem);
   border: 1px solid #ddd;
   background: white;
-  border-radius: 4px;
+  border-radius: clamp(4px, 0.5vw, 6px);
   cursor: pointer;
   color: #666;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: clamp(32px, 7vw, 44px);
+  min-height: clamp(32px, 7vw, 44px);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: clamp(0.8rem, 1.25vw, 0.9rem);
 }
 
 .page-btn:hover {
@@ -2138,46 +2192,57 @@ onMounted(() => {
   border-color: #B91C1C;
 }
 
-/* Mobile Responsive Styles */
+/* Responsive Design */
+@media screen and (max-width: 1200px) {
+  .users-table {
+    min-width: 900px;
+  }
+  
+  .users-table th,
+  .users-table td {
+    padding: clamp(0.75rem, 1.5vw, 1rem) clamp(0.5rem, 1.5vw, 0.75rem);
+  }
+}
+
 @media screen and (max-width: 1024px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: clamp(0.5rem, 1.5vw, 0.75rem);
   }
   
   .filters {
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: clamp(0.5rem, 1vw, 0.75rem);
   }
   
   .filters select {
-    flex: 1;
-    min-width: 120px;
+    min-width: 100px;
+    flex: 1 1 auto;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: clamp(0.75rem, 1.5vw, 1rem);
+  }
+  
+  .header-actions {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }
 
 @media screen and (max-width: 768px) {
   .user-management {
-    padding: 1rem;
-  }
-  
-  .header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-    text-align: center;
-  }
-  
-  .header-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
+    padding: clamp(0.75rem, 3vw, 1rem);
   }
   
   .header-actions .btn {
     flex: 1;
     min-width: 0;
-    padding: 0.75rem;
-    font-size: 0.9rem;
+    padding: clamp(0.5rem, 2vw, 0.75rem);
+    font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   }
   
   .header-actions .btn span {
@@ -2186,22 +2251,13 @@ onMounted(() => {
   
   .stats-grid {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    gap: clamp(0.5rem, 1.5vw, 0.75rem);
   }
   
   .stat-card {
-    padding: 1rem;
-    gap: 0.75rem;
-  }
-  
-  .stat-icon {
-    width: 35px;
-    height: 35px;
-  }
-  
-  .stat-content h3 {
-    font-size: 1.25rem;
+    padding: clamp(0.75rem, 2vw, 1rem);
+    gap: clamp(0.5rem, 1.5vw, 0.75rem);
+    min-height: 60px;
   }
   
   .filters-section {
@@ -2334,121 +2390,87 @@ onMounted(() => {
 }
 
 @media screen and (max-width: 480px) {
-  .user-management {
-    padding: 0.75rem;
-  }
-  
-  .header h1 {
-    font-size: 1.25rem;
-  }
-  
-  .header p {
-    font-size: 0.9rem;
-  }
-  
   .header-actions {
     flex-direction: column;
+    width: 100%;
+  }
+  
+  .header-actions .btn {
+    width: 100%;
   }
   
   .stat-card {
     flex-direction: column;
     text-align: center;
-    padding: 0.75rem;
+    padding: clamp(0.5rem, 2vw, 0.75rem);
+    min-height: auto;
   }
   
   .stat-icon {
-    width: 30px;
-    height: 30px;
-  }
-  
-  .stat-content h3 {
-    font-size: 1.1rem;
-  }
-  
-  .stat-content p {
-    font-size: 0.9rem;
-  }
-  
-  .filters-section {
-    padding: 0.75rem;
+    margin-bottom: 0.25rem;
   }
   
   .bulk-buttons {
     flex-direction: column;
+    gap: clamp(0.25rem, 1vw, 0.5rem);
   }
   
-  .modal {
-    margin: 0.25rem;
-    max-height: calc(100vh - 0.5rem);
-  }
-  
-  .modal-header,
-  .modal-body {
-    padding: 0.75rem;
+  .bulk-buttons .btn {
+    width: 100%;
   }
   
   .toast {
-    bottom: 1rem;
-    right: 1rem;
-    left: 1rem;
+    bottom: clamp(0.5rem, 2vw, 1rem);
+    right: clamp(0.5rem, 2vw, 1rem);
+    left: clamp(0.5rem, 2vw, 1rem);
     text-align: center;
+    font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   }
   
   /* Mobile card improvements for small screens */
-  .mobile-user-card {
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .mobile-user-header {
-    margin-bottom: 0.75rem;
-  }
-  
   .mobile-user-details {
-    padding: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .mobile-action-btn {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.75rem;
-    min-width: 70px;
+    grid-template-columns: 1fr;
+    gap: clamp(0.375rem, 1vw, 0.5rem);
   }
   
   .mobile-action-btn span {
     display: none;
   }
   
-  /* Mobile pagination */
-  .pagination {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem;
+  .mobile-action-btn {
+    min-width: clamp(60px, 15vw, 70px);
   }
   
+  /* Mobile pagination */
   .pagination-info {
-    text-align: center;
-    font-size: 0.8rem;
+    order: 2;
+    margin-top: clamp(0.25rem, 1vw, 0.5rem);
   }
   
   .pagination-controls {
-    justify-content: center;
+    order: 1;
   }
   
   .page-numbers {
-    gap: 0.125rem;
+    gap: clamp(0.0625rem, 0.25vw, 0.125rem);
+  }
+}
+
+/* Very small screens */
+@media screen and (max-width: 320px) {
+  .mobile-action-btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    max-width: calc(50% - 0.25rem);
   }
   
-  .page-btn {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
-    min-width: 36px;
-    min-height: 36px;
+  .mobile-user-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(0.25rem, 1vw, 0.375rem);
   }
   
-  .pagination-btn {
-    min-width: 36px;
-    min-height: 36px;
+  .filters select {
+    min-width: 80px;
   }
 }
 
@@ -2464,9 +2486,9 @@ onMounted(() => {
   
   .mobile-user-card {
     background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
+    border-radius: clamp(6px, 1vw, 8px);
+    padding: clamp(0.75rem, 2.5vw, 1rem);
+    margin-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border: 1px solid #f0f0f0;
   }
@@ -2474,18 +2496,22 @@ onMounted(() => {
   .mobile-user-header {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: clamp(0.5rem, 1.5vw, 0.75rem);
+    margin-bottom: clamp(0.75rem, 2vw, 1rem);
   }
   
   .mobile-user-header input[type="checkbox"] {
     margin: 0;
     margin-top: 0.25rem;
     flex-shrink: 0;
+    width: clamp(16px, 3vw, 20px);
+    height: clamp(16px, 3vw, 20px);
   }
   
   .user-avatar {
     flex-shrink: 0;
+    width: clamp(32px, 6vw, 40px);
+    height: clamp(32px, 6vw, 40px);
   }
   
   .mobile-user-info {
@@ -2498,33 +2524,35 @@ onMounted(() => {
     color: #333;
     margin-bottom: 0.25rem;
     word-break: break-word;
-    font-size: 1rem;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    line-height: 1.3;
   }
   
   .mobile-user-email {
-    font-size: 0.85rem;
+    font-size: clamp(0.8rem, 1.5vw, 0.85rem);
     color: #666;
     word-break: break-all;
+    line-height: 1.3;
   }
   
   .mobile-user-details {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: clamp(0.5rem, 1.5vw, 0.75rem);
+    margin-bottom: clamp(0.75rem, 2vw, 1rem);
     background: #f9f9f9;
-    padding: 0.75rem;
-    border-radius: 6px;
+    padding: clamp(0.5rem, 1.5vw, 0.75rem);
+    border-radius: clamp(4px, 0.75vw, 6px);
   }
   
   .mobile-detail-item {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: clamp(0.125rem, 0.5vw, 0.25rem);
   }
   
   .mobile-detail-label {
-    font-size: 0.75rem;
+    font-size: clamp(0.7rem, 1.25vw, 0.75rem);
     color: #666;
     font-weight: 600;
     text-transform: uppercase;
@@ -2532,31 +2560,33 @@ onMounted(() => {
   }
   
   .mobile-detail-value {
-    font-size: 0.9rem;
+    font-size: clamp(0.8rem, 1.5vw, 0.9rem);
     color: #333;
+    line-height: 1.3;
   }
   
   .mobile-user-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: clamp(0.375rem, 1vw, 0.5rem);
     flex-wrap: wrap;
   }
   
   .mobile-action-btn {
     flex: 1;
-    min-width: 80px;
-    padding: 0.6rem 0.5rem;
-    border-radius: 6px;
+    min-width: clamp(70px, 18vw, 80px);
+    padding: clamp(0.5rem, 1.5vw, 0.6rem) clamp(0.375rem, 1vw, 0.5rem);
+    border-radius: clamp(4px, 0.75vw, 6px);
     border: 1px solid #ddd;
     background: white;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: clamp(0.75rem, 1.25vw, 0.8rem);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
+    gap: clamp(0.125rem, 0.5vw, 0.25rem);
     font-weight: 500;
     transition: all 0.2s ease;
+    line-height: 1.2;
   }
   
   .mobile-action-btn.edit {

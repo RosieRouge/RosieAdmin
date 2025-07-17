@@ -27,7 +27,7 @@ export interface Database {
 }
 
 // User Roles for Reproductive Health Support System
-export type UserRole = 'user' | 'counselor' | 'admin' | 'super_admin'
+export type UserRole = 'client' | 'counselor' | 'admin' | 'super_admin'
 
 // User Types
 export interface User {
@@ -35,7 +35,7 @@ export interface User {
   name?: string
   username?: string
   email: string
-  roles: UserRole[] // Keep array for compatibility with existing code
+  role: UserRole // Single role field to match database schema
   is_active: boolean
   created_at: string
   updated_at: string
