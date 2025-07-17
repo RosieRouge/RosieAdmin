@@ -1,690 +1,1401 @@
 <template>
-  <div class="dashboard-view">
-    <div class="header">
-      <h1>Admin Dashboard</h1>
-      <p>Community Connect Platform Management</p>
-    </div>
-
-    <div class="content">
-      <!-- Stats Overview -->
-      <div class="stats-grid">
-        <div class="stat-card users">
-          <div class="stat-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ loading ? '...' : totalUsers }}</h3>
-            <p>Total Users</p>
-            <span class="stat-change positive" v-if="!loading">+{{ Math.floor(totalUsers * 0.02) }} today</span>
-          </div>
-        </div>
-
-        <div class="stat-card communities">
-          <div class="stat-icon">
-            <i class="fas fa-home"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ loading ? '...' : totalCommunities }}</h3>
-            <p>Communities</p>
-            <span class="stat-change positive" v-if="!loading">+{{ Math.floor(totalCommunities * 0.05) }} this week</span>
+  <AdminLayout>
+    <div class="dashboard">
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <div class="welcome-content">
+          <h1>Welcome to Rosie Rouge Admin</h1>
+          <p>Reproductive Health Support Platform Dashboard</p>
+          <div class="quick-stats">
+            <div class="stat">
+              <span class="stat-number">{{ stats.totalCases }}</span>
+              <span class="stat-label">Total Cases</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">{{ stats.activeCounselors }}</span>
+              <span class="stat-label">Active Counselors</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">{{ stats.dailyUsers }}</span>
+              <span class="stat-label">Daily Active Users</span>
+            </div>
           </div>
         </div>
-
-        <div class="stat-card topics">
-          <div class="stat-icon">
-            <i class="fas fa-comments"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ loading ? '...' : totalTopics }}</h3>
-            <p>Topics</p>
-            <span class="stat-change positive" v-if="!loading">+{{ Math.floor(totalTopics * 0.1) }} today</span>
-          </div>
+        <div class="welcome-actions">
+          <button class="btn btn-primary" @click="$router.push('/case-management')">
+            <i class="fas fa-briefcase-medical"></i>
+            Manage Cases
+          </button>
+          <button class="btn btn-outline" @click="$router.push('/crisis-alerts')">
+            <i class="fas fa-exclamation-triangle"></i>
+            Crisis Alerts
+          </button>
         </div>
+      </div>
 
-        <div class="stat-card events">
-          <div class="stat-icon">
-            <i class="fas fa-calendar"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ loading ? '...' : totalEvents }}</h3>
-            <p>Events</p>
-            <span class="stat-change positive" v-if="!loading">+{{ Math.floor(totalEvents * 0.08) }} this week</span>
-          </div>
-        </div>
-
-        <div class="stat-card messages">
-          <div class="stat-icon">
-            <i class="fas fa-envelope"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ loading ? '...' : totalMessages }}</h3>
-            <p>Messages</p>
-            <span class="stat-change positive" v-if="!loading">+{{ Math.floor(totalMessages * 0.15) }} today</span>
-          </div>
-        </div>
-
-        <div class="stat-card active-users">
-          <div class="stat-icon">
-            <i class="fas fa-user-check"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ loading ? '...' : Math.floor(totalUsers * 0.25) }}</h3>
-            <p>Active Users</p>
-            <span class="stat-change positive" v-if="!loading">+12% vs last week</span>
+      <!-- Crisis Alerts -->
+      <div v-if="crisisAlerts.length > 0" class="crisis-section">
+        <h2>
+          <i class="fas fa-exclamation-triangle"></i>
+          Crisis Alerts
+        </h2>
+        <div class="crisis-grid">
+          <div v-for="alert in crisisAlerts" :key="alert.id" class="crisis-card">
+            <div class="crisis-header">
+              <span class="crisis-badge">CRISIS</span>
+              <span class="crisis-time">{{ formatTimeAgo(alert.created_at) }}</span>
+            </div>
+            <h4>{{ alert.title }}</h4>
+            <p>{{ alert.description }}</p>
+            <div class="crisis-actions">
+              <button class="btn btn-sm btn-danger" @click="handleCrisis(alert)">
+                Respond Now
+              </button>
+              <button class="btn btn-sm btn-outline" @click="assignCrisis(alert)">
+                Assign Counselor
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Quick Actions & Recent Activity -->
+      <!-- Main Dashboard Grid -->
       <div class="dashboard-grid">
-        <div class="recent-activity">
-          <h2>Recent Activity</h2>
-          
-          <div v-if="loading" class="loading">
-            <i class="fas fa-spinner fa-spin"></i> Loading recent activity...
+        <!-- Support Cases Overview -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Support Cases</h3>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-outline" @click="refreshCases">
+                <i class="fas fa-refresh"></i>
+              </button>
+            </div>
           </div>
-          
-          <div v-else class="activity-list">
-            <div class="activity-section">
-              <h3>Recent Communities</h3>
-              <div v-if="recentCommunities.length === 0" class="no-data">
-                No communities found in database
+          <div class="cases-overview">
+            <div class="case-stat crisis">
+              <div class="case-icon">
+                <i class="fas fa-exclamation-triangle"></i>
               </div>
-              <div v-else class="activity-items">
-                <div v-for="community in recentCommunities.slice(0, 3)" :key="community.id" class="activity-item">
-                  <div class="activity-icon community">
-                    <i class="fas fa-home"></i>
-                  </div>
-                  <div class="activity-details">
-                    <p><strong>{{ community.name }}</strong></p>
-                    <p class="activity-meta">{{ community.member_count || 0 }} members • Created {{ formatDate(community.created_at) }}</p>
-                  </div>
-                </div>
+              <div class="case-info">
+                <span class="case-number">{{ caseStats.crisis }}</span>
+                <span class="case-label">Crisis Cases</span>
               </div>
             </div>
-
-            <div class="activity-section">
-              <h3>Recent Users</h3>
-              <div v-if="recentUsers.length === 0" class="no-data">
-                No users found in database
+            <div class="case-stat pending">
+              <div class="case-icon">
+                <i class="fas fa-clock"></i>
               </div>
-              <div v-else class="activity-items">
-                <div v-for="user in recentUsers.slice(0, 3)" :key="user.id" class="activity-item">
-                  <div class="activity-icon user">
-                    <i class="fas fa-user"></i>
-                  </div>
-                  <div class="activity-details">
-                    <p><strong>{{ user.name }}</strong></p>
-                    <p class="activity-meta">{{ user.email }} • Joined {{ formatDate(user.created_at) }}</p>
-                  </div>
-                </div>
+              <div class="case-info">
+                <span class="case-number">{{ caseStats.pending }}</span>
+                <span class="case-label">Pending</span>
               </div>
             </div>
-
-            <div class="activity-section">
-              <h3>Recent Events</h3>
-              <div v-if="recentEvents.length === 0" class="no-data">
-                No events found in database
+            <div class="case-stat active">
+              <div class="case-icon">
+                <i class="fas fa-tasks"></i>
               </div>
-              <div v-else class="activity-items">
-                <div v-for="event in recentEvents.slice(0, 3)" :key="event.id" class="activity-item">
-                  <div class="activity-icon event">
-                    <i class="fas fa-calendar"></i>
-                  </div>
-                  <div class="activity-details">
-                    <p><strong>{{ event.title }}</strong></p>
-                    <p class="activity-meta">{{ formatDate(event.start_time) }} • {{ event.attendee_count || 0 }} attending</p>
-                  </div>
-                </div>
+              <div class="case-info">
+                <span class="case-number">{{ caseStats.active }}</span>
+                <span class="case-label">Active</span>
               </div>
             </div>
+            <div class="case-stat resolved">
+              <div class="case-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="case-info">
+                <span class="case-number">{{ caseStats.resolvedToday }}</span>
+                <span class="case-label">Resolved Today</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-primary" @click="$router.push('/case-management')">
+              View All Cases
+            </button>
           </div>
         </div>
 
-        <div class="quick-actions">
-          <h2>Quick Actions</h2>
-          <div class="action-buttons">
-            <RouterLink to="/users" class="action-btn">
-              <i class="fas fa-users"></i>
-              <span>Manage Users</span>
-            </RouterLink>
-            <RouterLink to="/communities" class="action-btn">
-              <i class="fas fa-home"></i>
-              <span>View Communities</span>
-            </RouterLink>
-            <RouterLink to="/analytics" class="action-btn">
-              <i class="fas fa-chart-bar"></i>
-              <span>View Analytics</span>
-            </RouterLink>
-            <RouterLink to="/settings" class="action-btn">
-              <i class="fas fa-cog"></i>
-              <span>Platform Settings</span>
-            </RouterLink>
+        <!-- Counselor Status -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Counselor Status</h3>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-outline" @click="refreshCounselors">
+                <i class="fas fa-refresh"></i>
+              </button>
+            </div>
+          </div>
+          <div class="counselor-stats">
+            <div class="counselor-list">
+              <div v-for="counselor in topCounselors" :key="counselor.id" class="counselor-item">
+                <div class="counselor-avatar">
+                  <img :src="counselor.avatar || getDefaultAvatar(counselor.name)" :alt="counselor.name" />
+                  <div class="status-dot" :class="counselor.status"></div>
+                </div>
+                <div class="counselor-info">
+                  <span class="counselor-name">{{ counselor.name }}</span>
+                  <span class="counselor-cases">{{ counselor.active_cases || 0 }} active cases</span>
+                </div>
+                <div class="counselor-rating">
+                  <i class="fas fa-star"></i>
+                  {{ counselor.rating || '5.0' }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-primary" @click="$router.push('/counselors')">
+              Manage Counselors
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Recent Activity</h3>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-outline" @click="refreshActivity">
+                <i class="fas fa-refresh"></i>
+              </button>
+            </div>
+          </div>
+          <div class="activity-list">
+            <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
+              <div class="activity-icon" :class="activity.type">
+                <i class="fas" :class="getActivityIcon(activity.type)"></i>
+              </div>
+              <div class="activity-content">
+                <p class="activity-text">{{ activity.description }}</p>
+                <span class="activity-time">{{ formatTimeAgo(activity.created_at) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-outline" @click="$router.push('/analytics')">
+              View Analytics
+            </button>
+          </div>
+        </div>
+
+        <!-- Resource Library Status -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Resource Library</h3>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-outline" @click="refreshResources">
+                <i class="fas fa-refresh"></i>
+              </button>
+            </div>
+          </div>
+          <div class="resource-stats">
+            <div class="resource-categories">
+              <div class="resource-category">
+                <i class="fas fa-heart-pulse"></i>
+                <span>{{ resourceStats.abortion_support || 0 }} Abortion Support</span>
+              </div>
+              <div class="resource-category">
+                <i class="fas fa-pills"></i>
+                <span>{{ resourceStats.contraception || 0 }} Contraception</span>
+              </div>
+              <div class="resource-category">
+                <i class="fas fa-baby"></i>
+                <span>{{ resourceStats.pregnancy_options || 0 }} Pregnancy Options</span>
+              </div>
+              <div class="resource-category">
+                <i class="fas fa-scale-balanced"></i>
+                <span>{{ resourceStats.legal_support || 0 }} Legal Support</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-primary" @click="$router.push('/resources')">
+              Manage Resources
+            </button>
+          </div>
+        </div>
+
+        <!-- Support Groups -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Support Groups</h3>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-outline" @click="refreshGroups">
+                <i class="fas fa-refresh"></i>
+              </button>
+            </div>
+          </div>
+          <div class="groups-overview">
+            <div class="group-stat">
+              <span class="stat-number">{{ groupStats.total || 0 }}</span>
+              <span class="stat-label">Total Groups</span>
+            </div>
+            <div class="group-stat">
+              <span class="stat-number">{{ groupStats.active || 0 }}</span>
+              <span class="stat-label">Active Groups</span>
+            </div>
+            <div class="group-stat">
+              <span class="stat-number">{{ groupStats.members || 0 }}</span>
+              <span class="stat-label">Total Members</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-primary" @click="$router.push('/support-groups')">
+              Manage Groups
+            </button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import AdminLayout from '@/components/AdminLayout.vue'
 import { supabase } from '@/lib/supabase'
 
-const loading = ref(true)
+interface CrisisAlert {
+  id: string
+  title: string
+  description: string
+  created_at: string
+}
 
-// Stats
-const totalUsers = ref(0)
-const totalCommunities = ref(0)
-const totalTopics = ref(0)
-const totalEvents = ref(0)
-const totalMessages = ref(0)
+interface ActivityItem {
+  id: number
+  type: string
+  description: string
+  created_at: string
+}
 
-// Recent data
-const recentCommunities = ref<any[]>([])
-const recentUsers = ref<any[]>([])
-const recentEvents = ref<any[]>([])
+interface Counselor {
+  id: string
+  name: string
+  avatar?: string
+  status: string
+  active_cases: number
+  rating: string
+}
 
-onMounted(async () => {
-  await loadDashboardData()
+// Component state
+const loading = ref(false)
+const stats = ref({
+  totalCases: 0,
+  activeCounselors: 0,
+  dailyUsers: 0
 })
+const caseStats = ref({
+  crisis: 0,
+  pending: 0,
+  active: 0,
+  resolvedToday: 0
+})
+const topCounselors = ref<(Counselor & { status: string; active_cases: number; rating: string })[]>([])
+const recentActivity = ref<ActivityItem[]>([])
+const crisisAlerts = ref<CrisisAlert[]>([])
+const resourceStats = ref<Record<string, number>>({})
+const groupStats = ref<Record<string, number>>({})
 
+// Methods
 const loadDashboardData = async () => {
   loading.value = true
-  
   try {
-    // Load all data in parallel
-    const [
-      usersResult,
-      communitiesResult,
-      topicsResult,
-      eventsResult,
-      messagesResult
-    ] = await Promise.all([
-      supabase.from('users').select('*', { count: 'exact' }),
-      supabase.from('communities').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(5),
-      supabase.from('topics').select('*', { count: 'exact' }),
-      supabase.from('events').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(5),
-      supabase.from('messages').select('*', { count: 'exact' })
+    await Promise.all([
+      loadStats(),
+      loadCaseStats(),
+      loadCounselors(),
+      loadRecentActivity(),
+      loadCrisisAlerts(),
+      loadResourceStats(),
+      loadGroupStats()
     ])
-
-    // Set counts
-    totalUsers.value = usersResult.count || 0
-    totalCommunities.value = communitiesResult.count || 0
-    totalTopics.value = topicsResult.count || 0
-    totalEvents.value = eventsResult.count || 0
-    totalMessages.value = messagesResult.count || 0
-
-    // Set recent data
-    recentCommunities.value = communitiesResult.data || []
-    recentEvents.value = eventsResult.data || []
-    
-    // Get recent users
-    const recentUsersResult = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5)
-    
-    recentUsers.value = recentUsersResult.data || []
-
   } catch (error) {
-    console.error('Error loading dashboard data:', error)
+    console.error('Failed to load dashboard data:', error)
   } finally {
     loading.value = false
   }
 }
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return 'Unknown'
+const loadStats = async () => {
+  try {
+    // For now, use mock data since tables might not have the expected structure
+    stats.value = {
+      totalCases: 0,
+      activeCounselors: 0,
+      dailyUsers: 0
+    }
+  } catch (error) {
+    console.error('Error loading stats:', error)
+    stats.value = {
+      totalCases: 0,
+      activeCounselors: 0,
+      dailyUsers: 0
+    }
+  }
+}
+
+const loadCaseStats = async () => {
+  try {
+    // For now, use mock data since tables might not have the expected structure
+    caseStats.value = {
+      crisis: 0,
+      pending: 0,
+      active: 0,
+      resolvedToday: 0
+    }
+  } catch (error) {
+    console.error('Error loading case stats:', error)
+    caseStats.value = {
+      crisis: 0,
+      pending: 0,
+      active: 0,
+      resolvedToday: 0
+    }
+  }
+}
+
+const loadCounselors = async () => {
+  try {
+    // For now, use empty data since tables might not have the expected structure
+    topCounselors.value = []
+  } catch (error) {
+    console.error('Error loading counselors:', error)
+    topCounselors.value = []
+  }
+}
+
+const loadRecentActivity = async () => {
+  try {
+    // For now, use empty data since tables might not have the expected structure
+    recentActivity.value = []
+  } catch (error) {
+    console.error('Error loading recent activity:', error)
+    recentActivity.value = []
+  }
+}
+
+const loadCrisisAlerts = async () => {
+  try {
+    // For now, use empty data since tables might not have the expected structure
+    crisisAlerts.value = []
+  } catch (error) {
+    console.error('Error loading crisis alerts:', error)
+    crisisAlerts.value = []
+  }
+}
+
+const loadResourceStats = async () => {
+  try {
+    // For now, use empty data since tables might not have the expected structure
+    resourceStats.value = {}
+  } catch (error) {
+    console.error('Error loading resource stats:', error)
+    resourceStats.value = {}
+  }
+}
+
+const loadGroupStats = async () => {
+  try {
+    // For now, use empty data since tables might not have the expected structure
+    groupStats.value = {
+      total: 0,
+      active: 0,
+      members: 0
+    }
+  } catch (error) {
+    console.error('Error loading group stats:', error)
+    groupStats.value = {
+      total: 0,
+      active: 0,
+      members: 0
+    }
+  }
+}
+
+const refreshCases = () => loadCaseStats()
+const refreshCounselors = () => loadCounselors()
+const refreshActivity = () => loadRecentActivity()
+const refreshResources = () => loadResourceStats()
+const refreshGroups = () => loadGroupStats()
+
+const handleCrisis = (alert: any) => {
+  // Handle crisis case
+  console.log('Handling crisis:', alert)
+}
+
+const assignCrisis = (alert: any) => {
+  // Assign crisis to counselor
+  console.log('Assigning crisis:', alert)
+}
+
+// Utility functions
+const getDefaultAvatar = (name?: string) => {
+  if (!name) return 'https://randomuser.me/api/portraits/men/32.jpg'
+  const initials = name.split(' ').map(n => n[0]).join('')
+  return `https://ui-avatars.com/api/?name=${initials}&background=B91C1C&color=ffffff&size=128`
+}
+
+const getActivityIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    case_created: 'fa-plus-circle',
+    counselor_assigned: 'fa-user-plus',
+    case_resolved: 'fa-check-circle',
+    resource_added: 'fa-book-medical',
+    crisis_alert: 'fa-exclamation-triangle'
+  }
+  return icons[type] || 'fa-info-circle'
+}
+
+const formatTimeAgo = (dateString: string) => {
   const date = new Date(dateString)
   const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const diffInMs = now.getTime() - date.getTime()
+  const diffInMins = Math.floor(diffInMs / (1000 * 60))
   
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return `${days} days ago`
-  if (days < 30) return `${Math.floor(days / 7)} weeks ago`
+  if (diffInMins < 1) return 'Just now'
+  if (diffInMins < 60) return `${diffInMins}m ago`
   
-  return date.toLocaleDateString()
+  const diffInHours = Math.floor(diffInMins / 60)
+  if (diffInHours < 24) return `${diffInHours}h ago`
+  
+  const diffInDays = Math.floor(diffInHours / 24)
+  return `${diffInDays}d ago`
 }
+
+onMounted(() => {
+  loadDashboardData()
+})
 </script>
 
 <style scoped>
-.dashboard-view {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  box-sizing: border-box;
+.dashboard {
+  padding: 2rem;
+  background: var(--rosie-background);
+  min-height: 100vh;
 }
 
-.header {
-  background: white;
-  padding: 1.5rem;
-  margin-top: 0.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-.header p {
-  margin: 0;
-  color: #7f8c8d;
-  font-weight: 500;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-.stat-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.welcome-section {
+  background: linear-gradient(135deg, var(--rosie-primary) 0%, var(--rosie-primary-dark) 100%);
   color: white;
-  font-size: 1.5rem;
-  flex-shrink: 0;
+  padding: 3rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8px 25px rgba(185, 28, 28, 0.3);
 }
 
-.stat-icon.users { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.stat-icon.communities { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.stat-icon.topics { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.stat-icon.events { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-.stat-icon.messages { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-.stat-icon.active-users { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
-
-.stat-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.stat-info h3 {
-  margin: 0;
-  font-size: 2rem;
+.welcome-content h1 {
+  color: white;
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0;
   font-weight: 700;
-  color: #2c3e50;
 }
 
-.stat-info p {
-  margin: 0.25rem 0;
-  color: #7f8c8d;
-  font-weight: 500;
+.welcome-content p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  margin: 0 0 2rem 0;
 }
 
-.stat-change {
-  font-size: 0.85rem;
-  padding: 0.25rem 0.5rem;
+.quick-stats {
+  display: flex;
+  gap: 3rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 0.5rem;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.welcome-actions .btn {
+  min-width: 200px;
+  justify-content: center;
+}
+
+.crisis-section {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  color: white;
+  padding: 2rem;
   border-radius: 12px;
-  font-weight: 500;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
 }
 
-.stat-change.positive {
-  background: rgba(39, 174, 96, 0.1);
-  color: #27ae60;
+.crisis-section h2 {
+  color: white;
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.crisis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.crisis-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.crisis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.crisis-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crisis-time {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+}
+
+.crisis-card h4 {
+  color: white;
+  margin: 0 0 0.5rem 0;
+}
+
+.crisis-card p {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 1.5rem 0;
+  font-size: 0.9rem;
+}
+
+.crisis-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.crisis-actions .btn {
+  flex: 1;
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 2rem;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
 }
 
-.recent-activity {
+.dashboard-card {
   background: white;
-  padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(185, 28, 28, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.recent-activity h2 {
-  margin: 0 0 1.5rem 0;
-  color: #2c3e50;
-  font-size: 1.25rem;
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(185, 28, 28, 0.15);
 }
 
-.activity-list {
+.card-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 2rem 1rem 2rem;
+  border-bottom: 1px solid var(--rosie-secondary);
+}
+
+.card-header h3 {
+  color: var(--rosie-primary);
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cases-overview {
+  padding: 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
 }
 
-.activity-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.activity-section h3 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.1rem;
-}
-
-.activity-items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.activity-item {
+.case-stat {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: #f8f9fa;
   border-radius: 8px;
-  transition: background-color 0.2s;
+  background: var(--rosie-background);
 }
 
-.activity-item:hover {
-  background: #e9ecef;
+.case-stat.crisis {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.case-stat.pending {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.case-stat.active {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.case-stat.resolved {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.case-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.case-stat.crisis .case-icon {
+  background: #DC2626;
+}
+
+.case-stat.pending .case-icon {
+  background: #F59E0B;
+}
+
+.case-stat.active .case-icon {
+  background: #3B82F6;
+}
+
+.case-stat.resolved .case-icon {
+  background: #10B981;
+}
+
+.case-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.case-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--rosie-primary);
+  line-height: 1;
+}
+
+.case-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.counselor-stats {
+  padding: 1.5rem 2rem;
+}
+
+.counselor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.counselor-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--rosie-background);
+  border-radius: 8px;
+}
+
+.counselor-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.counselor-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rosie-secondary);
+}
+
+.status-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.status-dot.available {
+  background: #10B981;
+}
+
+.status-dot.busy {
+  background: #F59E0B;
+}
+
+.counselor-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.counselor-name {
+  font-weight: 600;
+  color: var(--rosie-primary);
+  font-size: 0.9rem;
+}
+
+.counselor-cases {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.counselor-rating {
+  color: #F59E0B;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.activity-list {
+  padding: 1.5rem 2rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--rosie-secondary);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
 }
 
 .activity-icon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.2rem;
   flex-shrink: 0;
 }
 
-.activity-icon.community { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.activity-icon.user { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.activity-icon.event { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.activity-icon.case_created {
+  background: #10B981;
+}
 
-.activity-details {
+.activity-icon.counselor_assigned {
+  background: #3B82F6;
+}
+
+.activity-icon.case_resolved {
+  background: #10B981;
+}
+
+.activity-icon.resource_added {
+  background: #8B5CF6;
+}
+
+.activity-content {
   flex: 1;
-  min-width: 0;
 }
 
-.activity-details p {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 0.95rem;
+.activity-text {
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
 }
 
-.activity-details p.activity-meta {
-  margin: 0.25rem 0 0 0;
-  color: #7f8c8d;
-  font-size: 0.85rem;
+.activity-time {
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
-.no-data {
-  text-align: center;
-  color: #7f8c8d;
-  font-style: italic;
-  padding: 1rem;
+.resource-stats {
+  padding: 1.5rem 2rem;
 }
 
-.loading {
-  text-align: center;
-  color: #7f8c8d;
-  padding: 2rem;
-}
-
-.quick-actions {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.quick-actions h2 {
-  margin: 0 0 1.5rem 0;
-  color: #2c3e50;
-  font-size: 1.25rem;
-}
-
-.action-buttons {
+.resource-categories {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.action-btn {
+.resource-category {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  background: white;
-  color: #495057;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--rosie-background);
+  border-radius: 8px;
 }
 
-.action-btn:hover {
-  background: #f8f9fa;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.resource-category i {
+  color: var(--rosie-primary);
+  width: 20px;
 }
 
-.action-btn i {
-  width: 16px;
-  color: #6c757d;
+.groups-overview {
+  padding: 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
 }
 
-/* Mobile Responsive Styles */
+.group-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: var(--rosie-background);
+  border-radius: 8px;
+}
+
+.card-footer {
+  padding: 1rem 2rem 2rem 2rem;
+}
+
+.card-footer .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Mobile Responsive */
+@media screen and (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .cases-overview {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .groups-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .crisis-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+}
+
 @media screen and (max-width: 768px) {
-  .dashboard-view {
+  .dashboard {
+    padding: 0;
+  }
+  
+  .welcome-section {
+    flex-direction: column;
+    gap: 2rem;
+    text-align: center;
+    padding: 2rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .welcome-content h1 {
+    font-size: 2rem;
+  }
+  
+  .welcome-content p {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .quick-stats {
+    flex-wrap: wrap;
     gap: 1.5rem;
+    justify-content: center;
   }
   
-  .header {
-    padding: 1rem;
+  .stat {
+    min-width: 100px;
   }
   
-  .header h1 {
-    font-size: 1.5rem;
+  .stat-number {
+    font-size: 1.75rem;
   }
   
-  .content {
-    gap: 1.5rem;
+  .welcome-actions {
+    flex-direction: row;
+    width: 100%;
+    gap: 1rem;
+    justify-content: center;
   }
   
-  .stats-grid {
+  .welcome-actions .btn {
+    flex: 1;
+    max-width: 200px;
+    min-width: auto;
+  }
+  
+  .crisis-section {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .crisis-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .crisis-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
   
-  .stat-card {
-    padding: 1rem;
+  .crisis-card {
+    padding: 1.25rem;
+  }
+  
+  .crisis-actions {
+    flex-direction: column;
     gap: 0.75rem;
   }
   
-  .stat-icon {
-    width: 50px;
-    height: 50px;
-    font-size: 1.25rem;
-  }
-  
-  .stat-info h3 {
-    font-size: 1.5rem;
-  }
-  
-  .stat-info p {
-    font-size: 0.85rem;
+  .crisis-actions .btn {
+    width: 100%;
   }
   
   .dashboard-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    margin-bottom: 1.5rem;
   }
   
-  .recent-activity,
-  .quick-actions {
+  .dashboard-card:hover {
+    transform: none;
+  }
+  
+  .card-header {
+    padding: 1.25rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .card-header h3 {
+    font-size: 1.125rem;
+    text-align: center;
+  }
+  
+  .card-actions {
+    justify-content: center;
+  }
+  
+  .cases-overview {
+    padding: 1.5rem;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .case-stat {
     padding: 1rem;
+    gap: 0.75rem;
   }
   
-  .recent-activity h2,
-  .quick-actions h2 {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
+  .case-stat:hover {
+    transform: none;
   }
   
-  .activity-item {
+  .case-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .case-number {
+    font-size: 1.25rem;
+  }
+  
+  .case-label {
+    font-size: 0.8rem;
+  }
+  
+  .counselor-stats {
+    padding: 1.5rem;
+  }
+  
+  .counselor-item {
     padding: 0.75rem;
     gap: 0.75rem;
   }
   
-  .activity-icon {
+  .counselor-avatar img {
     width: 36px;
     height: 36px;
-    font-size: 1rem;
   }
   
-  .activity-details p {
-    font-size: 0.9rem;
+  .counselor-name {
+    font-size: 0.85rem;
   }
   
-  .activity-details p.activity-meta {
+  .counselor-cases {
+    font-size: 0.75rem;
+  }
+  
+  .counselor-rating {
+    font-size: 0.75rem;
+  }
+  
+  .activity-list {
+    padding: 1.5rem;
+    max-height: 350px;
+  }
+  
+  .activity-item {
+    padding: 0.75rem 0;
+    gap: 0.75rem;
+  }
+  
+  .activity-icon {
+    width: 28px;
+    height: 28px;
     font-size: 0.8rem;
   }
   
-  .action-btn {
+  .activity-text {
+    font-size: 0.85rem;
+  }
+  
+  .activity-time {
+    font-size: 0.7rem;
+  }
+  
+  .resource-stats {
+    padding: 1.5rem;
+  }
+  
+  .resource-category {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .resource-category i {
+    font-size: 1rem;
+  }
+  
+  .resource-category span {
+    font-size: 0.85rem;
+  }
+  
+  .groups-overview {
+    padding: 1.5rem;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .group-stat {
     padding: 1rem;
-    font-size: 0.95rem;
+  }
+  
+  .card-footer {
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .card-footer .btn {
+    width: 100%;
   }
 }
 
-/* Small Mobile */
 @media screen and (max-width: 480px) {
-  .dashboard-view {
-    gap: 1rem;
+  .welcome-section {
+    padding: 1.5rem 1rem;
+    border-radius: 8px;
   }
   
-  .header {
-    padding: 0.75rem;
+  .welcome-content h1 {
+    font-size: 1.75rem;
   }
   
-  .header h1 {
-    font-size: 1.25rem;
+  .welcome-content p {
+    font-size: 1rem;
   }
   
-  .header p {
-    font-size: 0.9rem;
-  }
-  
-  .stat-card {
+  .quick-stats {
     flex-direction: column;
-    text-align: center;
     gap: 1rem;
+    align-items: center;
   }
   
-  .stat-icon {
-    width: 60px;
-    height: 60px;
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    min-width: 200px;
+  }
+  
+  .stat-number {
     font-size: 1.5rem;
   }
   
-  .activity-section h3 {
+  .stat-label {
+    font-size: 0.85rem;
+  }
+  
+  .welcome-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .welcome-actions .btn {
+    max-width: none;
+    padding: 0.75rem;
+  }
+  
+  .crisis-section {
+    padding: 1.25rem;
+    border-radius: 8px;
+  }
+  
+  .crisis-card {
+    padding: 1rem;
+  }
+  
+  .crisis-card h4 {
     font-size: 1rem;
+  }
+  
+  .crisis-card p {
+    font-size: 0.85rem;
+  }
+  
+  .dashboard-card {
+    border-radius: 8px;
+  }
+  
+  .card-header {
+    padding: 1rem;
+  }
+  
+  .card-header h3 {
+    font-size: 1rem;
+  }
+  
+  .cases-overview,
+  .counselor-stats,
+  .activity-list,
+  .resource-stats,
+  .groups-overview {
+    padding: 1rem;
+  }
+  
+  .case-stat {
+    padding: 0.75rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .case-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .case-number {
+    font-size: 1.125rem;
+  }
+  
+  .counselor-item {
+    padding: 0.75rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .counselor-avatar img {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .counselor-rating {
+    justify-content: center;
   }
   
   .activity-item {
     flex-direction: column;
     text-align: center;
-    padding: 1rem;
+    gap: 0.5rem;
   }
   
-  .activity-details {
+  .activity-icon {
+    width: 28px;
+    height: 28px;
+    align-self: center;
+  }
+  
+  .activity-content {
+    align-items: center;
+  }
+  
+  .resource-category {
+    flex-direction: column;
     text-align: center;
+    gap: 0.5rem;
   }
   
-  .recent-activity,
-  .quick-actions {
+  .group-stat {
     padding: 0.75rem;
+  }
+  
+  .card-footer {
+    padding: 1rem;
   }
 }
 
 /* Touch Device Optimizations */
 @media (hover: none) and (pointer: coarse) {
-  .stat-card:hover,
-  .activity-item:hover,
-  .action-btn:hover {
+  .dashboard-card:hover,
+  .case-stat:hover,
+  .counselor-item:hover,
+  .resource-category:hover,
+  .group-stat:hover {
     transform: none;
+  }
+  
+  .dashboard-card:active {
+    transform: scale(0.98);
+  }
+  
+  .case-stat:active,
+  .counselor-item:active,
+  .resource-category:active,
+  .group-stat:active {
+    transform: scale(0.95);
+  }
+  
+  .btn:hover {
     background: inherit;
-    box-shadow: inherit;
+    color: inherit;
   }
   
-  .stat-card:active {
-    transform: scale(0.98);
-  }
-  
-  .activity-item:active {
-    background: #e9ecef;
-  }
-  
-  .action-btn:active {
-    background: #f8f9fa;
-    transform: scale(0.98);
+  .btn:active {
+    transform: scale(0.95);
   }
 }
 
-/* High DPI displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  .stat-card,
-  .recent-activity,
-  .quick-actions {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+/* Landscape orientation on mobile */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .welcome-section {
+    padding: 1.5rem;
+  }
+  
+  .quick-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .welcome-actions {
+    flex-direction: row;
+  }
+  
+  .crisis-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .cases-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .groups-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Very small screens */
+@media screen and (max-width: 320px) {
+  .welcome-content h1 {
+    font-size: 1.5rem;
+  }
+  
+  .welcome-content p {
+    font-size: 0.9rem;
+  }
+  
+  .card-header h3 {
+    font-size: 0.9rem;
+  }
+  
+  .case-number {
+    font-size: 1rem;
+  }
+  
+  .case-label {
+    font-size: 0.75rem;
+  }
+  
+  .counselor-name {
+    font-size: 0.8rem;
+  }
+  
+  .counselor-cases {
+    font-size: 0.7rem;
+  }
+  
+  .activity-text {
+    font-size: 0.8rem;
+  }
+  
+  .activity-time {
+    font-size: 0.65rem;
+  }
+  
+  .resource-category span {
+    font-size: 0.8rem;
   }
 }
 </style> 

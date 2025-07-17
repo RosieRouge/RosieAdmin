@@ -31,7 +31,28 @@ onMounted(async () => {
 </template>
 
 <style>
-@import '@fortawesome/fontawesome-free/css/all.min.css';
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css');
+
+/* FontAwesome Fallback */
+.fas, .far, .fab {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 6 Brands", "FontAwesome", sans-serif !important;
+  font-weight: 900;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.far {
+  font-weight: 400;
+}
+
+.fab {
+  font-weight: 400;
+  font-family: "Font Awesome 6 Brands", "FontAwesome", sans-serif !important;
+}
 
 /* CSS Reset and Base Styles */
 *,
@@ -100,18 +121,199 @@ div, section, article, aside, header, footer, nav, main {
   #app {
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
+  
+  body {
+    font-size: 14px;
+  }
 }
 
 @media screen and (min-width: 481px) and (max-width: 768px) {
   html {
     font-size: 15px;
   }
+  
+  body {
+    font-size: 15px;
+  }
 }
 
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media screen and (min-width: 1025px) {
   html {
     font-size: 16px;
   }
+}
+
+/* Enhanced Mobile Responsive Utilities */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media screen and (max-width: 768px) {
+  .container {
+    padding: 0 0.75rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+}
+
+/* Flexible Grid System */
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid-cols-1 { grid-template-columns: 1fr; }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media screen and (max-width: 1024px) {
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media screen and (max-width: 768px) {
+  .grid-cols-4,
+  .grid-cols-3,
+  .grid-cols-2 { 
+    grid-template-columns: 1fr; 
+  }
+}
+
+/* Flexible Layout Classes */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+
+/* Responsive Text Sizes */
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+
+@media screen and (max-width: 768px) {
+  .text-3xl { font-size: 1.5rem; }
+  .text-2xl { font-size: 1.25rem; }
+  .text-xl { font-size: 1.125rem; }
+}
+
+@media screen and (max-width: 480px) {
+  .text-3xl { font-size: 1.25rem; }
+  .text-2xl { font-size: 1.125rem; }
+  .text-xl { font-size: 1rem; }
+}
+
+/* Responsive Spacing */
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+
+.m-1 { margin: 0.25rem; }
+.m-2 { margin: 0.5rem; }
+.m-3 { margin: 0.75rem; }
+.m-4 { margin: 1rem; }
+.m-6 { margin: 1.5rem; }
+.m-8 { margin: 2rem; }
+
+@media screen and (max-width: 768px) {
+  .p-8 { padding: 1.5rem; }
+  .p-6 { padding: 1rem; }
+  .m-8 { margin: 1.5rem; }
+  .m-6 { margin: 1rem; }
+}
+
+@media screen and (max-width: 480px) {
+  .p-8 { padding: 1rem; }
+  .p-6 { padding: 0.75rem; }
+  .p-4 { padding: 0.75rem; }
+  .m-8 { margin: 1rem; }
+  .m-6 { margin: 0.75rem; }
+  .m-4 { margin: 0.75rem; }
+}
+
+/* Mobile-friendly buttons */
+.btn-mobile {
+  min-height: 44px; /* iOS recommended touch target */
+  min-width: 44px;
+  padding: 0.75rem 1rem;
+}
+
+@media screen and (max-width: 768px) {
+  .btn-mobile {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Hide/Show utilities for responsive design */
+.hidden { display: none; }
+
+.block { display: block; }
+.inline-block { display: inline-block; }
+.inline { display: inline; }
+
+@media screen and (max-width: 768px) {
+  .md\:hidden { display: none; }
+  .md\:block { display: block; }
+  .md\:flex { display: flex; }
+}
+
+@media screen and (max-width: 480px) {
+  .sm\:hidden { display: none; }
+  .sm\:block { display: block; }
+  .sm\:flex { display: flex; }
+}
+
+@media screen and (min-width: 769px) {
+  .lg\:block { display: block; }
+  .lg\:flex { display: flex; }
+  .lg\:hidden { display: none; }
 }
 
 /* Utility Classes */
@@ -139,7 +341,7 @@ div, section, article, aside, header, footer, nav, main {
   border: 0 !important;
 }
 
-/* Focus Styles */
+/* Enhanced Focus Styles for Mobile */
 *:focus {
   outline: 2px solid #007AFF;
   outline-offset: 2px;
@@ -154,6 +356,14 @@ div, section, article, aside, header, footer, nav, main {
   outline-offset: 2px;
 }
 
+/* Touch-friendly focus for mobile */
+@media (hover: none) and (pointer: coarse) {
+  *:focus {
+    outline: 3px solid #007AFF;
+    outline-offset: 3px;
+  }
+}
+
 /* Button Reset */
 button {
   background: none;
@@ -161,12 +371,16 @@ button {
   padding: 0;
   cursor: pointer;
   font-family: inherit;
+  min-height: 44px; /* Touch-friendly minimum */
 }
 
 /* Link Reset */
 a {
   color: inherit;
   text-decoration: none;
+  min-height: 44px; /* Touch-friendly minimum */
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Form Element Improvements */
@@ -175,6 +389,8 @@ textarea,
 select {
   font-family: inherit;
   font-size: inherit;
+  min-height: 44px; /* Touch-friendly minimum */
+  padding: 0.75rem;
 }
 
 input[type="search"] {
@@ -188,24 +404,36 @@ input[type="search"]::-webkit-search-results-decoration {
   -webkit-appearance: none;
 }
 
-/* Scrollbar Styling */
+/* Enhanced Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #c1c1c1;
-  border-radius: 4px;
+  border-radius: 6px;
+  border: 2px solid #f1f1f1;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+@media screen and (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    border: 1px solid #f1f1f1;
+  }
 }
 
 /* High DPI Display Optimizations */
@@ -227,7 +455,7 @@ input[type="search"]::-webkit-search-results-decoration {
   }
 }
 
-/* Dark Mode Support */
+/* Enhanced Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #1a1a1a;
@@ -240,6 +468,7 @@ input[type="search"]::-webkit-search-results-decoration {
   
   ::-webkit-scrollbar-thumb {
     background: #555;
+    border-color: #2d2d2d;
   }
   
   ::-webkit-scrollbar-thumb:hover {
@@ -307,7 +536,7 @@ input[type="search"]::-webkit-search-results-decoration {
   cursor: wait !important;
 }
 
-/* Animation Classes */
+/* Enhanced Animation Classes */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -350,5 +579,49 @@ input[type="search"]::-webkit-search-results-decoration {
 .info {
   color: #17a2b8;
   border-color: #17a2b8;
+}
+
+/* Mobile-specific improvements */
+@media screen and (max-width: 768px) {
+  /* Improve touch targets */
+  button, a, input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* Better spacing for mobile */
+  .mobile-spacing > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* Stack elements vertically on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+  
+  .mobile-stack > * {
+    width: 100% !important;
+  }
+}
+
+/* Tablet-specific improvements */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .tablet-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .tablet-stack {
+    flex-direction: column !important;
+  }
+}
+
+/* Landscape mobile improvements */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  #app {
+    min-height: 100vh;
+  }
+  
+  .landscape-row {
+    flex-direction: row !important;
+  }
 }
 </style>

@@ -1,23 +1,41 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* Rosie Brand Color Palette */
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  /* Rosie Brand Colors */
+  --rosie-primary: #B91C1C;        /* Deep red/burgundy from logo */
+  --rosie-primary-dark: #991B1B;   /* Darker red for hover states */
+  --rosie-primary-light: #DC2626;  /* Lighter red for accents */
+  
+  --rosie-bg: #F8C9C9;             /* Soft pink background */
+  --rosie-bg-light: #FDE2E2;       /* Very light pink */
+  --rosie-bg-accent: #F5A5A5;      /* Medium pink for highlights */
+  
+  --rosie-white: #FFFFFF;          /* Pure white */
+  --rosie-white-soft: #FEFEFE;     /* Soft white */
+  --rosie-white-mute: #F9F9F9;     /* Muted white */
+  
+  --rosie-gray: #6B7280;           /* Neutral gray for text */
+  --rosie-gray-light: #9CA3AF;     /* Light gray */
+  --rosie-gray-dark: #374151;      /* Dark gray */
+
+  /* Legacy Vue colors for compatibility */
+  --vt-c-white: var(--rosie-white);
+  --vt-c-white-soft: var(--rosie-white-soft);
+  --vt-c-white-mute: var(--rosie-white-mute);
 
   --vt-c-black: #181818;
   --vt-c-black-soft: #222222;
   --vt-c-black-mute: #282828;
 
-  --vt-c-indigo: #2c3e50;
+  --vt-c-indigo: var(--rosie-primary);
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
+  --vt-c-divider-light-1: rgba(185, 28, 28, 0.29);
+  --vt-c-divider-light-2: rgba(185, 28, 28, 0.12);
   --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
   --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
+  --vt-c-text-light-1: var(--rosie-primary);
+  --vt-c-text-light-2: var(--rosie-gray);
+  --vt-c-text-dark-1: var(--rosie-white);
   --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
 }
 
@@ -84,3 +102,4 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+

@@ -2,7 +2,7 @@
   <div class="about">
     <div class="about-content">
       <h1>About Admin Panel</h1>
-      <p>Community Connect Admin Panel - Manage your platform with ease</p>
+              <p>Rosie Admin Panel - Manage your reproductive health support platform with ease</p>
     </div>
   </div>
 </template>

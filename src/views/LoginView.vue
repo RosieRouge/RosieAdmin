@@ -3,8 +3,12 @@
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
-          <h1 class="login-title">Admin Panel</h1>
-          <p class="login-subtitle">Sign in to access Community Connect admin dashboard</p>
+          <div class="rosie-logo">
+            <h1 class="rosie-title">Rosie Rouge</h1>
+            <div class="rosie-subtitle">Reproductive Health Support</div>
+          </div>
+          <h2 class="login-title">Admin Panel</h2>
+          <p class="login-subtitle">Sign in to access Rosie Rouge admin dashboard</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="login-form">
@@ -47,37 +51,10 @@
             class="login-button"
           >
             <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-sign-in-alt"></i>
+                          <i v-else class="fas fa-right-to-bracket"></i>
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </button>
         </form>
-
-        <div class="dev-help">
-          <details>
-            <summary>Development Help</summary>
-            <div class="dev-content">
-              <p><strong>First time setup?</strong></p>
-              <p>Create an admin user by running this SQL in your Supabase SQL Editor:</p>
-              <pre><code>INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at, role)
-VALUES (
-  gen_random_uuid(), 
-  'admin@admin.com', 
-  crypt('AdminPass123!', gen_salt('bf')), 
-  now(), 
-  now(), 
-  now(),
-  'authenticated'
-);
-
-INSERT INTO public.users (id, name, email, role)
-SELECT id, 'Super Admin User', email, 'super_admin' 
-FROM auth.users 
-WHERE email = 'admin@admin.com';</code></pre>
-              <p><strong>Default credentials:</strong></p>
-              <p>Email: admin@admin.com<br>Password: AdminPass123!</p>
-            </div>
-          </details>
-        </div>
       </div>
     </div>
   </div>
@@ -91,7 +68,7 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const email = ref('admin@admin.com')
+const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
@@ -103,16 +80,29 @@ const handleLogin = async () => {
   errorMessage.value = ''
 
   try {
-    const { error } = await authStore.signIn(email.value, password.value)
+    const result = await authStore.signIn(email.value, password.value)
 
-    if (error) {
-      errorMessage.value = error.message || 'Login failed. Please check your credentials.'
+    if (result.error) {
+      errorMessage.value = result.error.message || 'Login failed. Please check your credentials.'
+      return
+    }
+
+    // Check if user is authenticated
+    if (!authStore.isAuthenticated) {
+      errorMessage.value = 'Authentication failed. Please try again.'
+      return
+    }
+
+    // Check if user has admin privileges
+    if (!authStore.isAdmin) {
+      errorMessage.value = 'Access denied: Only administrators and super administrators can access this panel.'
       return
     }
 
     // Redirect to dashboard on successful login
     router.push('/dashboard')
   } catch (error: any) {
+    console.error('Login error:', error)
     errorMessage.value = error.message || 'An unexpected error occurred'
   } finally {
     loading.value = false
@@ -148,9 +138,30 @@ const handleLogin = async () => {
   margin-bottom: 2rem;
 }
 
-.login-title {
-  font-size: 2rem;
+.rosie-logo {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f3f4;
+}
+
+.rosie-title {
+  font-size: 2.5rem;
   font-weight: 700;
+  color: #dc6bac;
+  margin: 0;
+  font-family: 'Georgia', serif;
+}
+
+.rosie-subtitle {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 600;
   color: #2c3e50;
   margin: 0 0 0.5rem 0;
 }
@@ -246,54 +257,6 @@ const handleLogin = async () => {
   transform: none;
 }
 
-.dev-help {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e9ecef;
-}
-
-.dev-help summary {
-  color: #7f8c8d;
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0.5rem 0;
-  user-select: none;
-}
-
-.dev-help summary:hover {
-  color: #667eea;
-}
-
-.dev-content {
-  padding: 1rem 0;
-  color: #6c757d;
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-
-.dev-content p {
-  margin: 0 0 1rem 0;
-}
-
-.dev-content strong {
-  color: #495057;
-}
-
-.dev-content pre {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 6px;
-  border-left: 3px solid #667eea;
-  overflow-x: auto;
-  margin: 1rem 0;
-  font-size: 0.8rem;
-}
-
-.dev-content code {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  line-height: 1.4;
-}
-
 /* Mobile Responsive */
 @media (max-width: 480px) {
   .login-view {
@@ -306,11 +269,6 @@ const handleLogin = async () => {
   
   .login-title {
     font-size: 1.75rem;
-  }
-  
-  .dev-content pre {
-    font-size: 0.75rem;
-    padding: 0.75rem;
   }
 }
 
@@ -337,11 +295,6 @@ const handleLogin = async () => {
   
   .form-input:focus {
     background: #333333;
-  }
-  
-  .dev-content pre {
-    background: #2d2d2d;
-    color: #ffffff;
   }
 }
 </style> 

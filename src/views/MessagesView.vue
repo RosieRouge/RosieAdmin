@@ -8,7 +8,7 @@
       </div>
       <div class="header-actions">
         <button @click="showAutoModModal = true" class="btn secondary">
-          <i class="fas fa-robot"></i>
+          <i class="fas fa-gear"></i>
           <span class="btn-text">Auto-Mod Rules</span>
         </button>
         <button @click="exportMessages" class="btn secondary">
@@ -55,7 +55,7 @@
 
       <div class="stat-card spam">
         <div class="stat-icon">
-          <i class="fas fa-shield-alt"></i>
+          <i class="fas fa-shield"></i>
         </div>
         <div class="stat-info">
           <h3>{{ autoModerated }}</h3>
@@ -179,7 +179,7 @@
               
               <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments">
                 <div v-for="attachment in message.attachments" :key="attachment" class="attachment">
-                  <i class="fas fa-paperclip"></i>
+                  <i class="fas fa-file"></i>
                   <span>{{ getAttachmentName(attachment) }}</span>
                 </div>
               </div>
@@ -192,11 +192,11 @@
                   {{ message.report_count || 0 }} reports
                 </span>
                 <span class="stat">
-                  <i class="fas fa-thumbs-up"></i>
+                  <i class="fas fa-heart"></i>
                   {{ message.like_count || 0 }} likes
                 </span>
                 <span class="stat">
-                  <i class="fas fa-reply"></i>
+                  <i class="fas fa-comment"></i>
                   {{ message.reply_count || 0 }} replies
                 </span>
               </div>
@@ -366,9 +366,9 @@ const loadStats = async () => {
         m.status === 'hidden' && new Date(m.created_at).toDateString() === today
       ).length
       
-      // Mock auto-moderation stats
-      autoModerated.value = Math.floor(totalMessages.value * 0.1)
-      spamBlocked.value = 95
+      // Calculate real auto-moderation stats from database
+      autoModerated.value = messageStats.filter(m => m.status === 'flagged').length
+      spamBlocked.value = messageStats.filter(m => m.status === 'hidden').length
     }
   } catch (error) {
     console.error('Error loading stats:', error)

@@ -2,13 +2,16 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/LoginView.vue'
 import DashboardView from '@/views/DashboardView.vue'
-import UsersView from '@/views/UsersView.vue'
-import CommunitiesView from '@/views/CommunitiesView.vue'
-
-import EventsView from '@/views/EventsView.vue'
+import UserManagementView from '@/views/UserManagementView.vue'
+import CaseManagementView from '@/views/CaseManagementView.vue'
+import CounselorsView from '@/views/CounselorsView.vue'
+import SupportGroupsView from '@/views/SupportGroupsView.vue'
+import ResourcesView from '@/views/ResourcesView.vue'
+import CrisisAlertsView from '@/views/CrisisAlertsView.vue'
 import MessagesView from '@/views/MessagesView.vue'
 import AnalyticsView from '@/views/AnalyticsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,27 +33,45 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/users',
-      name: 'users',
-      component: UsersView,
+      path: '/case-management',
+      name: 'case-management',
+      component: CaseManagementView,
       meta: { requiresAuth: true }
     },
     {
-      path: '/communities',
-      name: 'communities',
-      component: CommunitiesView,
+      path: '/user-management',
+      name: 'user-management',
+      component: UserManagementView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/counselors',
+      name: 'counselors',
+      component: CounselorsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/support-groups',
+      name: 'support-groups',
+      component: SupportGroupsView,
       meta: { requiresAuth: true }
     },
 
     {
-      path: '/events',
-      name: 'events',
-      component: EventsView,
+      path: '/resources',
+      name: 'resources',
+      component: ResourcesView,
       meta: { requiresAuth: true }
     },
     {
-      path: '/messages',
-      name: 'messages',
+      path: '/crisis-alerts',
+      name: 'crisis-alerts',
+      component: CrisisAlertsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/message-moderation',
+      name: 'message-moderation',
       component: MessagesView,
       meta: { requiresAuth: true }
     },
@@ -65,7 +86,8 @@ const router = createRouter({
       name: 'settings',
       component: SettingsView,
       meta: { requiresAuth: true }
-    }
+    },
+
   ]
 })
 
