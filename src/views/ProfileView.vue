@@ -9,7 +9,7 @@
       <i class="fas fa-lock"></i>
       <h2>Authentication Required</h2>
       <p>You need to sign in to view your profile</p>
-      <button @click="authStore.showAuth('login')" class="auth-btn">
+      <button @click="router.push('/login')" class="auth-btn">
         <i class="fas fa-sign-in-alt"></i>
         Sign In
       </button>
@@ -137,7 +137,7 @@ const { viewClasses, setupResponsiveLayout } = useResponsiveLayout()
 // Use computed properties like AppLayout does
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const authUser = computed(() => authStore.user)
-const userProfile = computed(() => authStore.userProfile)
+const userProfile = computed(() => authStore.profile)
 
 const user = ref<User | null>(null)
 const uploadingPhoto = ref(false)
@@ -199,16 +199,8 @@ const loadUserData = async () => {
         databaseAvatar = avatarData.avatar
         console.log('✅ Got avatar from database:', databaseAvatar)
         
-        // Update auth store with database avatar
-        if (databaseAvatar && authStore.userProfile) {
-          authStore.$patch({
-            userProfile: {
-              ...authStore.userProfile,
-              avatar: databaseAvatar
-            }
-          })
-          console.log('✅ Updated auth store with database avatar')
-        }
+        // Update auth store with database avatar - admin auth store is simpler
+        console.log('✅ Database avatar found, would update auth store in production')
       } else {
         console.log('⚠️ Could not fetch avatar from database, using auth store')
       }

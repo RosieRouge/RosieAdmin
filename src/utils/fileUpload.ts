@@ -21,15 +21,15 @@ export const uploadVoiceMessage = async (audioBlob: Blob, fileName: string) => {
   }
 }
 
-export const uploadPhoto = async (file: File) => {
+export const uploadPhoto = async (file: File, userId: string, contextId: string) => {
   try {
     // TODO: Implement actual file upload to Supabase storage
-    console.log('Uploading photo:', file.name)
+    console.log('Uploading photo:', file.name, 'for user:', userId, 'context:', contextId)
     
     // Mock response for now
     return {
-      url: `https://example.com/photos/${file.name}`,
-      path: `photos/${file.name}`,
+      url: `https://example.com/photos/${contextId}/${file.name}`,
+      path: `photos/${contextId}/${file.name}`,
       error: null
     }
   } catch (error) {

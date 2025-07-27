@@ -193,6 +193,8 @@ export interface CrisisAlert {
 }
 
 // Resource Types
+export type ResourceCategory = 'healthcare' | 'legal' | 'financial' | 'educational' | 'emotional_support' | 'transportation' | 'housing' | 'other'
+
 export interface PublicResource {
   id: string
   title: string

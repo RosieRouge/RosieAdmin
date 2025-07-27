@@ -519,6 +519,8 @@ import { useUserStore, useCommunitiesStore } from '@/stores/index'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { uploadPhoto } from '../utils/fileUpload'
+import heic2any from 'heic2any'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import UserProfilePopup from '@/components/UserProfilePopup.vue'
 
@@ -1211,65 +1213,10 @@ const sendMessage = async () => {
       console.log('🎤 Voice messaging not available in admin panel')
       showToastMessage('Voice messaging not available in admin panel', 'info')
       return
-      
-    const messageData = {
-        content: `[Voice Message - ${formatRecordingTime(recordingTime.value)}]`,
-        sender_id: currentUserId.value,
-        message_type: 'voice',
-        media_url: uploadResult.url,
-        media_data: JSON.stringify({
-          duration: recordingTime.value,
-          size: voiceBlob.value.size,
-          type: voiceBlob.value.type,
-          file_path: uploadResult.path,
-          placeholder: false
-        }),
-        created_at: new Date().toISOString(),
-        // Set ONLY the appropriate ID based on chat type
-        ...(isSupportGroupChat.value 
-          ? { support_group_id: groupId.value }
-          : { topic_id: topicId.value }
-        )
-      }
+    }
 
-    const { data, error } = await supabase
-      .from('messages')
-      .insert(messageData)
-      .select(`
-        id,
-        content,
-          sender_id,
-        topic_id,
-          support_group_id,
-        created_at,
-          message_type,
-          media_url,
-          media_data,
-          users!sender_id (
-            id,
-            name,
-            avatar,
-            email
-          )
-        `)
-        .single()
-
-      if (error) {
-        console.error('❌ Error sending voice message:', error)
-        throw error
-      }
-
-      console.log('✅ Voice message sent successfully:', data)
-
-      const messageWithUser = {
-        ...data,
-        user: data.users
-      }
-      messages.value.push(messageWithUser)
-      
-      deleteVoiceRecording()
-      
-    } else {
+    // Handle text message
+    if (newMessage.value.trim()) {
       // Handle text message
       const messageData: any = {
         content: newMessage.value.trim(),
