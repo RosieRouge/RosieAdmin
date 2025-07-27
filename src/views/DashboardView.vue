@@ -1,6 +1,6 @@
 <template>
   <AdminLayout>
-    <div class="dashboard">
+    <div class="dashboard" :class="dashboardClasses">
       <!-- Welcome Section -->
       <div class="welcome-section">
         <div class="welcome-content">
@@ -20,16 +20,6 @@
               <span class="stat-label">Daily Active Users</span>
             </div>
           </div>
-        </div>
-        <div class="welcome-actions">
-          <button class="btn btn-primary" @click="$router.push('/case-management')">
-            <i class="fas fa-briefcase-medical"></i>
-            Manage Cases
-          </button>
-          <button class="btn btn-outline" @click="$router.push('/crisis-alerts')">
-            <i class="fas fa-exclamation-triangle"></i>
-            Crisis Alerts
-          </button>
         </div>
       </div>
 
@@ -252,9 +242,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import AdminLayout from '@/components/AdminLayout.vue'
 import { supabase } from '@/lib/supabase'
+import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
 
 interface CrisisAlert {
   id: string
@@ -281,6 +272,9 @@ interface Counselor {
 
 // Component state
 const loading = ref(false)
+
+// Responsive layout
+const { viewClasses: dashboardClasses, setupResponsiveLayout } = useResponsiveLayout()
 const stats = ref({
   totalCases: 0,
   activeCounselors: 0,
@@ -466,6 +460,14 @@ const formatTimeAgo = (dateString: string) => {
 
 onMounted(() => {
   loadDashboardData()
+  
+  // Setup responsive layout
+  const cleanup = setupResponsiveLayout()
+  
+  // Store cleanup for unmounting
+  onUnmounted(() => {
+    cleanup()
+  })
 })
 </script>
 
@@ -474,6 +476,31 @@ onMounted(() => {
   padding: 2rem;
   background: var(--rosie-background);
   min-height: 100vh;
+  position: fixed;
+  top: 60px;
+  left: 280px;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  transition: left 0.3s ease, padding 0.3s ease;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 1023px) {
+  .dashboard {
+    left: 0 !important;
+    top: 80px !important; /* Mobile header height */
+    bottom: 80px !important; /* Mobile bottom nav */
+    padding: 1rem !important;
+  }
+}
+
+/* Sidebar state detection */
+@media (min-width: 1024px) {
+  /* When sidebar is collapsed (70px wide) */
+  .dashboard.sidebar-collapsed {
+    left: 70px;
+  }
 }
 
 .welcome-section {
@@ -482,9 +509,6 @@ onMounted(() => {
   padding: 3rem;
   border-radius: 16px;
   margin-bottom: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   box-shadow: 0 8px 25px rgba(185, 28, 28, 0.3);
 }
 
@@ -525,16 +549,7 @@ onMounted(() => {
   margin-top: 0.5rem;
 }
 
-.welcome-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
 
-.welcome-actions .btn {
-  min-width: 200px;
-  justify-content: center;
-}
 
 .crisis-section {
   background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
@@ -936,8 +951,6 @@ onMounted(() => {
   }
   
   .welcome-section {
-    flex-direction: column;
-    gap: 2rem;
     text-align: center;
     padding: 2rem 1.5rem;
     margin-bottom: 1.5rem;
@@ -964,19 +977,6 @@ onMounted(() => {
   
   .stat-number {
     font-size: 1.75rem;
-  }
-  
-  .welcome-actions {
-    flex-direction: row;
-    width: 100%;
-    gap: 1rem;
-    justify-content: center;
-  }
-  
-  .welcome-actions .btn {
-    flex: 1;
-    max-width: 200px;
-    min-width: auto;
   }
   
   .crisis-section {
@@ -1186,15 +1186,7 @@ onMounted(() => {
     font-size: 0.85rem;
   }
   
-  .welcome-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .welcome-actions .btn {
-    max-width: none;
-    padding: 0.75rem;
-  }
+
   
   .crisis-section {
     padding: 1.25rem;

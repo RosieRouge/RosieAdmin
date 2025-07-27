@@ -11,6 +11,14 @@ import CrisisAlertsView from '@/views/CrisisAlertsView.vue'
 import MessagesView from '@/views/MessagesView.vue'
 import AnalyticsView from '@/views/AnalyticsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import ChatsView from '@/views/ChatsView.vue'
+import CounselorDashboardView from '@/views/CounselorDashboardView.vue'
+import GroupManagementView from '@/views/GroupManagementView.vue'
+import ProfileView from '@/views/ProfileView.vue'
+import EditProfileView from '@/views/EditProfileView.vue'
+import ChatView from '@/views/ChatView.vue'
+import GroupChatView from '@/views/GroupChatView.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
 
 
 const router = createRouter({
@@ -87,6 +95,54 @@ const router = createRouter({
       component: SettingsView,
       meta: { requiresAuth: true }
     },
+    {
+      path: '/chats',
+      name: 'chats',
+      component: ChatsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/cases',
+      name: 'cases',
+      component: CounselorDashboardView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/group-management',
+      name: 'group-management',
+      component: GroupManagementView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/support-group/:id/chat',
+      name: 'support-group-chat',
+      component: GroupChatView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/edit-profile',
+      name: 'edit-profile',
+      component: EditProfileView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/chat/:conversationId',
+      name: 'direct-chat',
+      component: ChatView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: ResetPasswordView,
+      meta: { requiresGuest: true }
+    }
 
   ]
 })

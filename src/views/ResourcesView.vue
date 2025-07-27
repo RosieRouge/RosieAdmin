@@ -1,5 +1,5 @@
 <template>
-  <div class="resources-admin">
+  <div class="resources-admin admin-view" :class="viewClasses">
     <!-- Header with Statistics -->
     <div class="header-section">
       <div class="header-content">
@@ -405,13 +405,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
 import { useAuthStore } from '@/stores/auth'
 import { AdminResourcesService } from '@/services/resourcesService'
 import type { PublicResource, ResourceCategory } from '@/types'
 import type { AdminResourceFilters, CreateResourceData, ResourceUploadData } from '@/services/resourcesService'
 
 const authStore = useAuthStore()
+
+// Responsive layout
+const { viewClasses, setupResponsiveLayout } = useResponsiveLayout()
 
 // State
 const loading = ref(true)
@@ -794,11 +798,34 @@ onMounted(() => {
 
 <style scoped>
 .resources-admin {
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 2rem;
   background: #FDE2E2;
   min-height: 100vh;
+  position: fixed;
+  top: 60px;
+  left: 280px;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  transition: left 0.3s ease, padding 0.3s ease;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 1023px) {
+  .resources-admin {
+    left: 0 !important;
+    top: 80px !important; /* Mobile header height */
+    bottom: 80px !important; /* Mobile bottom nav */
+    padding: 1rem !important;
+  }
+}
+
+/* Sidebar state detection */
+@media (min-width: 1024px) {
+  /* When sidebar is collapsed (70px wide) */
+  .resources-admin.sidebar-collapsed {
+    left: 70px;
+  }
 }
 
 /* Header Section */

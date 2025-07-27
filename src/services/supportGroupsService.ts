@@ -48,6 +48,11 @@ export interface SupportGroup {
   member_count: number
   message_count: number
   
+  // Membership status (populated when userId provided to queries)
+  is_member?: boolean
+  member_role?: string | null
+  joined_at?: string | null
+  
   // Relationships
   created_by_user?: {
     id: string
@@ -406,6 +411,7 @@ class SupportGroupsService {
       if (updates.description !== undefined) updateData.description = updates.description  
       if (updates.is_private !== undefined) updateData.is_private = updates.is_private
       if (updates.is_confidential !== undefined) updateData.is_confidential = updates.is_confidential
+      if (updates.requires_approval !== undefined) updateData.requires_approval = updates.requires_approval
       
       // Add visibility fields only if they're provided (for when DB columns exist)
       if (updates.visible_to_users !== undefined) updateData.visible_to_users = updates.visible_to_users
@@ -513,6 +519,8 @@ class SupportGroupsService {
   // Member Management
   async getGroupMembers(groupId: string): Promise<SupportGroupMember[]> {
     try {
+      console.log('Fetching members for group:', groupId)
+      
       const { data, error } = await supabaseAdmin
         .from('support_group_members')
         .select(`
@@ -522,7 +530,7 @@ class SupportGroupsService {
           role,
           joined_at,
           left_at,
-          users(
+          users!support_group_members_user_id_fkey (
             id,
             name,
             email,
@@ -530,6 +538,7 @@ class SupportGroupsService {
           )
         `)
         .eq('support_group_id', groupId)
+        .is('left_at', null)
         .order('joined_at', { ascending: false })
 
       if (error) {
@@ -537,13 +546,30 @@ class SupportGroupsService {
         throw error
       }
 
-      // Transform the data to match the expected type
-      const membersWithUserData = (data || []).map(member => ({
-        ...member,
-        user: Array.isArray(member.users) ? member.users[0] : member.users
-      }))
+      console.log('Raw member data from database:', data)
 
-      console.log('Group members fetched with user data:', membersWithUserData.length)
+      // Transform the data to match the expected type with better error handling
+      const membersWithUserData = (data || []).map(member => {
+        const userData = Array.isArray(member.users) ? member.users[0] : member.users
+        console.log('Processing member:', {
+          memberId: member.id,
+          userId: member.user_id,
+          userData,
+          rawUsers: member.users
+        })
+        
+        return {
+          ...member,
+          user: userData || {
+            id: member.user_id,
+            name: 'Unknown User',
+            email: '',
+            avatar: null
+          }
+        }
+      })
+
+      console.log('Processed group members:', membersWithUserData)
       return membersWithUserData as SupportGroupMember[]
     } catch (error) {
       console.error('Error in getGroupMembers:', error)
@@ -1004,6 +1030,268 @@ class SupportGroupsService {
     }
     
     return now.toISOString()
+  }
+
+  async joinGroup(groupId: string, userId: string, requestMessage?: string): Promise<void> {
+    // Check if user is already a member
+    const { data: existingMember } = await supabase
+      .from('support_group_members')
+      .select('id')
+      .eq('support_group_id', groupId)
+      .eq('user_id', userId)
+      .single()
+
+    if (existingMember) {
+      throw new Error('User is already a member of this group')
+    }
+
+    // Check if group requires approval
+    const { data: group } = await supabase
+      .from('support_groups')
+      .select('requires_approval')
+      .eq('id', groupId)
+      .single()
+
+    if (group?.requires_approval) {
+      // Create join request
+      const { error } = await supabase
+        .from('support_group_join_requests')
+        .insert({
+          support_group_id: groupId,
+          user_id: userId,
+          request_message: requestMessage,
+          status: 'pending'
+        })
+
+      if (error) {
+        console.error('Error creating join request:', error)
+        throw error
+      }
+    } else {
+      // Add directly to group
+      const { error } = await supabase
+        .from('support_group_members')
+        .insert({
+          support_group_id: groupId,
+          user_id: userId,
+          role: 'member'
+        })
+
+      if (error) {
+        console.error('Error joining group:', error)
+        throw error
+      }
+    }
+  }
+
+  async leaveGroup(groupId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('support_group_members')
+      .delete()
+      .eq('support_group_id', groupId)
+      .eq('user_id', userId)
+
+    if (error) {
+      console.error('Error leaving group:', error)
+      throw error
+    }
+  }
+
+  async getSupportGroups(userRole: string, userId?: string): Promise<SupportGroup[]> {
+    try {
+      console.log('Fetching support groups for role:', userRole, 'userId:', userId)
+      
+      // Get all support groups that are visible to the user's role
+      let query = supabase
+        .from('support_groups')
+        .select(`
+          *,
+          created_by_user:users!support_groups_created_by_fkey(id, name, email)
+        `)
+        .order('created_at', { ascending: false })
+
+      // Filter by role visibility
+      if (userRole === 'admin' || userRole === 'super_admin') {
+        query = query.eq('visible_to_admins', true)
+      } else if (userRole === 'counselor') {
+        query = query.eq('visible_to_counselors', true)
+      } else {
+        query = query.eq('visible_to_users', true)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error fetching support groups:', error)
+        throw error
+      }
+
+      if (!data) return []
+
+      // Get enhanced data for each group
+      const groupIds = data.map(group => group.id)
+      
+      // Get membership information if userId provided
+      let membershipMap = new Map()
+      if (userId) {
+        const { data: memberships } = await supabase
+          .from('support_group_members')
+          .select('support_group_id, role, joined_at')
+          .eq('user_id', userId)
+          .in('support_group_id', groupIds)
+
+        membershipMap = new Map(
+          memberships?.map(m => [m.support_group_id, m]) || []
+        )
+      }
+
+      // Get member counts for each group
+      const { data: memberCounts } = await supabase
+        .from('support_group_members')
+        .select('support_group_id')
+        .in('support_group_id', groupIds)
+        .is('left_at', null)
+
+      const memberCountMap = new Map()
+      memberCounts?.forEach(m => {
+        const count = memberCountMap.get(m.support_group_id) || 0
+        memberCountMap.set(m.support_group_id, count + 1)
+      })
+
+      // Get last messages for each group
+      const { data: lastMessages } = await supabase
+        .from('messages')
+        .select(`
+          support_group_id,
+          content,
+          sender_id,
+          created_at,
+          sender:users!messages_sender_id_fkey(id, name)
+        `)
+        .in('support_group_id', groupIds)
+        .order('created_at', { ascending: false })
+
+      // Create map of last messages per group
+      const lastMessageMap = new Map()
+      lastMessages?.forEach(msg => {
+        if (!lastMessageMap.has(msg.support_group_id)) {
+          lastMessageMap.set(msg.support_group_id, msg)
+        }
+      })
+
+      // Get all members for each group with user details - using separate queries for reliability
+      console.log('📊 Starting member fetch for groups:', groupIds)
+      
+      // First, get all members for these groups
+      const { data: allMembers, error: membersError } = await supabase
+        .from('support_group_members')
+        .select(`
+          support_group_id,
+          user_id,
+          role,
+          joined_at
+        `)
+        .in('support_group_id', groupIds)
+        .is('left_at', null)
+        
+      console.log('📊 Members query result:', { allMembers, membersError })
+      
+      let memberUserDetails: any[] = []
+      if (allMembers && allMembers.length > 0) {
+        // Get unique user IDs
+        const userIds = [...new Set(allMembers.map(m => m.user_id))]
+        console.log('📊 Fetching user details for IDs:', userIds)
+        
+        // Fetch user details
+        const { data: userDetails, error: usersError } = await supabase
+          .from('users')
+          .select('id, name, email, avatar')
+          .in('id', userIds)
+          
+        console.log('📊 User details query result:', { userDetails, usersError, userIds })
+        memberUserDetails = userDetails || []
+        
+        // Add user data to each member
+        allMembers.forEach((member: any) => {
+          const userDetail = memberUserDetails.find((user: any) => user.id === member.user_id)
+          member.user = userDetail || null
+          console.log('📊 Adding user data to member:', { 
+            member_id: member.user_id, 
+            found_user: !!userDetail,
+            user_name: userDetail?.name,
+            user_email: userDetail?.email 
+          })
+        })
+      }
+
+      const membersMap = new Map()
+      allMembers?.forEach(member => {
+        if (!membersMap.has(member.support_group_id)) {
+          membersMap.set(member.support_group_id, [])
+        }
+        
+        // Use joined user data if available, otherwise fall back to separate fetch
+        const userDetail: any = (member as any).user || memberUserDetails.find((user: any) => user.id === member.user_id)
+        
+        // Enhanced name resolution with better fallbacks
+        let displayName = 'Unknown User'
+        if (userDetail && userDetail.name && typeof userDetail.name === 'string' && userDetail.name.trim()) {
+          displayName = userDetail.name.trim()
+        } else if (userDetail && userDetail.email && typeof userDetail.email === 'string' && userDetail.email.trim()) {
+          // Use email prefix if name is not available
+          displayName = userDetail.email.split('@')[0]
+        } else if (member.user_id) {
+          // Last resort: use partial UUID
+          displayName = `User ${member.user_id.slice(0, 8)}`
+        }
+        
+        const memberWithUser = {
+          ...member,
+          user: userDetail ? {
+            id: userDetail.id,
+            name: displayName,
+            email: (userDetail.email && typeof userDetail.email === 'string') ? userDetail.email : '',
+            avatar: userDetail.avatar || null
+          } : null,
+          // Fallback data for direct access
+          name: displayName,
+          email: (userDetail && userDetail.email && typeof userDetail.email === 'string') ? userDetail.email : '',
+          avatar: (userDetail && userDetail.avatar) ? userDetail.avatar : null
+        }
+        
+        console.log('📊 Enhanced member processing:', { 
+          member_id: member.user_id,
+          original_user: (member as any).user,
+          fallback_user: memberUserDetails.find((user: any) => user.id === member.user_id),
+          final_user: userDetail,
+          display_name: displayName,
+          final_member: memberWithUser
+        })
+        
+        membersMap.get(member.support_group_id).push(memberWithUser)
+      })
+
+      return data.map(group => {
+        const lastMessage = lastMessageMap.get(group.id)
+        const members = membersMap.get(group.id) || []
+        
+        return {
+          ...group,
+          is_member: membershipMap.has(group.id),
+          member_role: membershipMap.get(group.id)?.role || null,
+          joined_at: membershipMap.get(group.id)?.joined_at || null,
+          member_count: memberCountMap.get(group.id) || 0,
+          members: members,
+          last_message_content: lastMessage?.content || null,
+          last_message_sender_id: lastMessage?.sender_id || null,
+          last_message_sender_name: lastMessage?.sender?.name || null,
+          last_message_at: lastMessage?.created_at || null
+        }
+      })
+    } catch (error) {
+      console.error('Error loading support groups:', error)
+      throw error
+    }
   }
 }
 

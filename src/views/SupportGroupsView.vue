@@ -92,16 +92,6 @@
       <!-- Support Groups Grid -->
       <div class="groups-grid grid">
         <div v-for="group in paginatedGroups" :key="group.id" class="group-card">
-          <div class="group-header">
-            <div class="group-type-badge" :class="group.type">
-              <i class="fas" :class="getTypeIcon(group.type)"></i>
-              {{ getTypeLabel(group.type) }}
-            </div>
-            <div class="group-status" :class="group.status">
-              {{ group.status }}
-            </div>
-          </div>
-
           <div class="group-content">
             <div class="group-title">
               <h3>{{ group.name }}</h3>
@@ -349,6 +339,15 @@
                     </div>
                   </div>
                   <small class="form-help">Select which user roles can discover and join this support group. At least one role must be selected.</small>
+                </div>
+                
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" v-model="editForm.requires_approval">
+                    <span class="checkmark"></span>
+                    Require Approval to Join
+                  </label>
+                  <small class="form-help">When enabled, users must request to join and be approved by an administrator</small>
                 </div>
               </div>
 
@@ -837,6 +836,7 @@ const editForm = ref<any>({
   description: '',
   is_private: false,
   is_confidential: true,
+  requires_approval: false,
   // Role-based visibility controls
   visible_to_users: true,
   visible_to_counselors: true,
@@ -1022,26 +1022,6 @@ const visiblePages = computed(() => {
 })
 
 // Methods
-const getTypeIcon = (type: string) => {
-  switch (type) {
-    case 'pre_abortion': return 'fa-heart-pulse'
-    case 'post_abortion': return 'fa-healing'
-    case 'crisis': return 'fa-exclamation-triangle'
-    case 'ongoing': return 'fa-hands-holding-heart'
-    default: return 'fa-heart'
-  }
-}
-
-const getTypeLabel = (type: string) => {
-  switch (type) {
-    case 'pre_abortion': return 'Pre-Abortion'
-    case 'post_abortion': return 'Post-Abortion'
-    case 'crisis': return 'Crisis Support'
-    case 'ongoing': return 'Ongoing Support'
-    default: return 'Support'
-  }
-}
-
 const applyFilters = () => {
   currentPage.value = 1
 }
@@ -1194,7 +1174,7 @@ const getGroupJoinRequests = (groupId: string) => {
 const openGroupChat = (group: SupportGroup) => {
   // Open the group chat using the new GroupChatView
   // Since this is admin panel, we'll open in a new tab to the user app
-  const chatUrl = `${window.location.protocol}//${window.location.hostname}:5174/support-group/${group.id}/chat`
+  const chatUrl = `https://rosieapp.org/support-group/${group.id}/chat`
   window.open(chatUrl, '_blank')
 }
 
@@ -1208,6 +1188,7 @@ const manageGroup = (group: SupportGroup) => {
     description: group.description || '',
     is_private: group.is_private ?? false,
     is_confidential: group.is_confidential ?? true,
+    requires_approval: group.requires_approval ?? false,
     // Role-based visibility controls
     visible_to_users: group.visible_to_users ?? true,
     visible_to_counselors: group.visible_to_counselors ?? true,
@@ -1459,6 +1440,7 @@ const updateGroup = async () => {
       description: editForm.value.description,
       is_private: editForm.value.is_private,
       is_confidential: editForm.value.is_confidential,
+      requires_approval: editForm.value.requires_approval,
       // Role-based visibility controls
       visible_to_users: editForm.value.visible_to_users,
       visible_to_counselors: editForm.value.visible_to_counselors,
@@ -1961,76 +1943,8 @@ const removeMemberFromGroup = async (member: any) => {
   border-color: #e2e8f0;
 }
 
-.group-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  padding: 1.5rem 1.5rem 0 1.5rem;
-}
-
-.group-type-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
-
-.group-type-badge.pre_abortion {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3);
-}
-
-.group-type-badge.post_abortion {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
-}
-
-.group-type-badge.crisis {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  box-shadow: 0 2px 8px rgba(250, 112, 154, 0.3);
-}
-
-.group-type-badge.ongoing {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #2c3e50;
-  box-shadow: 0 2px 8px rgba(168, 237, 234, 0.3);
-}
-
-.group-status {
-  padding: 0.375rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  text-transform: capitalize;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.group-status.active {
-  background: rgba(39, 174, 96, 0.1);
-  color: #27ae60;
-  border: 1px solid rgba(39, 174, 96, 0.2);
-}
-
-.group-status.pending {
-  background: rgba(243, 156, 18, 0.1);
-  color: #f39c12;
-  border: 1px solid rgba(243, 156, 18, 0.2);
-}
-
-.group-status.inactive {
-  background: rgba(149, 165, 166, 0.1);
-  color: #95a5a6;
-  border: 1px solid rgba(149, 165, 166, 0.2);
-}
-
 .group-content {
-  padding: 0 1.5rem 1.5rem 1.5rem;
+  padding: 1.5rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -2810,14 +2724,9 @@ const removeMemberFromGroup = async (member: any) => {
     min-height: auto;
   }
   
-  .group-header {
-    padding: 1.25rem 1.25rem 0 1.25rem;
-    margin-bottom: 1.25rem;
-  }
-  
-  .group-content {
-    padding: 0 1.25rem 1.25rem 1.25rem;
-  }
+      .group-content {
+      padding: 1.25rem;
+    }
   
   .group-meta {
     grid-template-columns: 1fr;
@@ -2858,14 +2767,9 @@ const removeMemberFromGroup = async (member: any) => {
     margin-bottom: 1rem;
   }
   
-  .group-header {
-    padding: 1rem 1rem 0 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  .group-content {
-    padding: 0 1rem 1rem 1rem;
-  }
+      .group-content {
+      padding: 1rem;
+    }
   
   .group-title h3 {
     font-size: 1.1rem;

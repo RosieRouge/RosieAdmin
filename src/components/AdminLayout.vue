@@ -1,8 +1,27 @@
 <template>
   <div class="admin-layout">
+    <!-- Mobile Header Bar -->
+    <header class="mobile-header">
+      <button @click="toggleMobileMenu" class="mobile-menu-btn" title="Open Menu">
+        <i class="fas fa-bars"></i>
+        <span class="hamburger-fallback">☰</span>
+      </button>
+      <div class="mobile-logo">
+        <i class="fas fa-heart-pulse"></i>
+        <span>Rosie Admin</span>
+      </div>
+      <div class="mobile-user">
+        <img 
+          :src="adminUser?.avatar || 'https://randomuser.me/api/portraits/men/32.jpg'" 
+          :alt="adminUser?.name || 'Admin'" 
+          class="mobile-user-avatar"
+        >
+      </div>
+    </header>
+
     <!-- Mobile Overlay -->
     <div 
-      v-if="showMobileOverlay" 
+      v-if="mobileMenuOpen" 
       class="mobile-overlay" 
       @click="closeMobileSidebar"
     ></div>
@@ -24,13 +43,14 @@
 
       <nav class="sidebar-nav">
         <RouterLink 
-          to="/" 
-          class="nav-item" 
-          :class="{ active: route.name === 'dashboard' }"
+          to="/crisis-alerts" 
+          class="nav-item crisis" 
+          :class="{ active: route.name === 'crisis-alerts' }"
           @click="handleNavClick"
         >
-          <i class="fas fa-chart-bar"></i>
-          <span v-show="!sidebarCollapsed || mobileMenuOpen">Dashboard</span>
+          <i class="fas fa-triangle-exclamation"></i>
+          <span v-show="!sidebarCollapsed || mobileMenuOpen">Crisis Alerts</span>
+          <span v-if="crisisCount > 0" class="crisis-badge">{{ crisisCount }}</span>
         </RouterLink>
 
         <RouterLink 
@@ -49,7 +69,7 @@
           :class="{ active: route.name === 'user-management' }"
           @click="handleNavClick"
         >
-          <i class="fas fa-users-medical"></i>
+          <i class="fas fa-users-cog"></i>
           <span v-show="!sidebarCollapsed || mobileMenuOpen">User Management</span>
         </RouterLink>
 
@@ -70,10 +90,8 @@
           @click="handleNavClick"
         >
           <i class="fas fa-people-group"></i>
-          <span v-show="!sidebarCollapsed || mobileMenuOpen">Support Groups</span>
+          <span v-show="!sidebarCollapsed || mobileMenuOpen">Group Chat Management</span>
         </RouterLink>
-
-
 
         <RouterLink 
           to="/resources" 
@@ -86,17 +104,6 @@
         </RouterLink>
 
         <RouterLink 
-          to="/crisis-alerts" 
-          class="nav-item crisis" 
-          :class="{ active: route.name === 'crisis-alerts' }"
-          @click="handleNavClick"
-        >
-          <i class="fas fa-triangle-exclamation"></i>
-          <span v-show="!sidebarCollapsed || mobileMenuOpen">Crisis Alerts</span>
-          <span v-if="crisisCount > 0" class="crisis-badge">{{ crisisCount }}</span>
-        </RouterLink>
-
-        <RouterLink 
           to="/analytics" 
           class="nav-item" 
           :class="{ active: route.name === 'analytics' }"
@@ -105,56 +112,19 @@
           <i class="fas fa-chart-line"></i>
           <span v-show="!sidebarCollapsed || mobileMenuOpen">Analytics</span>
         </RouterLink>
-
-        <RouterLink 
-          to="/settings" 
-          class="nav-item" 
-          :class="{ active: route.name === 'settings' }"
-          @click="handleNavClick"
-        >
-          <i class="fas fa-cog"></i>
-          <span v-show="!sidebarCollapsed || mobileMenuOpen">Settings</span>
-        </RouterLink>
       </nav>
     </aside>
 
     <!-- Main Content -->
     <div class="main-content">
-      <!-- Header -->
-      <header class="header">
-        <div class="header-left">
-          <button class="mobile-menu-btn" @click="toggleMobileMenu">
-            <i class="fas fa-bars"></i>
-          </button>
-          <h1>{{ pageTitle }}</h1>
-        </div>
-        <div class="header-right">
-          <button class="refresh-btn" @click="refreshData" :title="'Refresh Data'">
-            <i class="fas fa-arrows-rotate" :class="{ 'fa-spin': loading }"></i>
-          </button>
-          <div class="crisis-indicator" v-if="crisisCount > 0" title="Active Crisis Cases">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>{{ crisisCount }}</span>
-          </div>
-          <div class="user-menu">
-            <img 
-              :src="adminUser?.avatar || 'https://randomuser.me/api/portraits/men/32.jpg'" 
-              :alt="adminUser?.name || 'Admin'" 
-              class="user-avatar"
-            >
-            <span class="user-name">{{ adminUser?.name || 'Admin' }}</span>
-            <button @click="logout" class="logout-btn" title="Logout">
-              <i class="fas fa-right-from-bracket"></i>
-            </button>
-          </div>
-        </div>
-      </header>
-
       <!-- Page Content -->
       <main class="content">
         <slot></slot>
       </main>
     </div>
+
+    <!-- Bottom Navigation -->
+    <BottomNavigation />
   </div>
 </template>
 
@@ -163,6 +133,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@/types'
+import BottomNavigation from '@/components/BottomNavigation.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -173,20 +144,7 @@ const adminUser = ref<User | null>(null)
 const isMobile = ref(false)
 const crisisCount = ref(0)
 
-const pageTitle = computed(() => {
-  const routeNameMap: Record<string, string> = {
-    dashboard: 'Dashboard',
-    'case-management': 'Case Management',
-    'user-management': 'User Management',
-    counselors: 'Counselor Management',
-    'support-groups': 'Support Groups',
-    resources: 'Resource Management',
-    'crisis-alerts': 'Crisis Alerts',
-    analytics: 'Analytics',
-    settings: 'Settings'
-  }
-  return routeNameMap[route.name as string] || 'Rosie App Admin'
-})
+// Removed pageTitle computed since we removed the main header
 
 const showMobileOverlay = computed(() => {
   return isMobile.value && mobileMenuOpen.value
@@ -221,12 +179,7 @@ const handleNavClick = () => {
   }
 }
 
-const refreshData = () => {
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
-  }, 1000)
-}
+// Removed refreshData function since we removed the main header
 
 const logout = async () => {
   await supabase.auth.signOut()
@@ -243,6 +196,8 @@ const loadAdminUser = async () => {
       name: 'Super Admin',
       role: 'super_admin',
       is_active: true,
+      is_verified: true,
+      last_active: new Date().toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       avatar: undefined
@@ -289,6 +244,100 @@ onUnmounted(() => {
   position: relative;
 }
 
+/* Mobile Header */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, #B91C1C 0%, #991B1B 100%);
+  color: white;
+  z-index: 1001;
+  padding: 0 1rem;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(185, 28, 28, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Show mobile header on smaller screens */
+@media (max-width: 1023px) {
+  .mobile-header {
+    display: flex !important;
+  }
+}
+
+.mobile-menu-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1.25rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-menu-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mobile-menu-btn .hamburger-fallback {
+  display: none;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.mobile-menu-btn .fas.fa-bars {
+  display: block;
+}
+
+/* Fallback if Font Awesome doesn't load */
+.mobile-menu-btn .fas.fa-bars:empty ~ .hamburger-fallback {
+  display: block;
+}
+
+.mobile-menu-btn .fas.fa-bars:empty {
+  display: none;
+}
+
+.mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.mobile-logo i {
+  font-size: 1.25rem;
+}
+
+.mobile-user {
+  display: flex;
+  align-items: center;
+}
+
+.mobile-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
 .mobile-overlay {
   position: fixed;
   top: 0;
@@ -318,6 +367,18 @@ onUnmounted(() => {
 
 .sidebar.collapsed {
   width: 70px;
+}
+
+/* Mobile sidebar behavior */
+@media (max-width: 1023px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 1002;
+  }
+  
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
 }
 
 .sidebar-header {
@@ -397,12 +458,6 @@ onUnmounted(() => {
   border-left-color: #F8C9C9;
 }
 
-.nav-item.crisis {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin-top: 0.5rem;
-  padding-top: 1.5rem;
-}
-
 .nav-item.crisis.active {
   background-color: rgba(255, 0, 0, 0.2);
   border-left-color: #ff4444;
@@ -468,151 +523,7 @@ onUnmounted(() => {
   margin-left: 70px;
 }
 
-.header {
-  background: linear-gradient(135deg, white 0%, #FDE2E2 100%);
-  padding: 1rem 2rem;
-  border-bottom: 1px solid #F8C9C9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.1);
-  min-height: 80px;
-  box-sizing: border-box;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.mobile-menu-btn {
-  background: none;
-  border: none;
-  color: #B91C1C;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: all 0.2s;
-  min-width: 44px;
-  min-height: 44px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-.mobile-menu-btn:hover {
-  background-color: #F8C9C9;
-}
-
-.header-left h1 {
-  color: #B91C1C;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-shrink: 0;
-}
-
-.refresh-btn {
-  background: none;
-  border: 1px solid #F8C9C9;
-  color: #B91C1C;
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.refresh-btn:hover {
-  background-color: #F8C9C9;
-}
-
-.crisis-indicator {
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  animation: pulse 2s infinite;
-}
-
-.crisis-indicator i {
-  font-size: 1rem;
-}
-
-.user-menu {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  background: rgba(248, 201, 201, 0.3);
-  border-radius: 8px;
-  max-width: 200px;
-  border: 1px solid #F8C9C9;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 2px solid #B91C1C;
-}
-
-.user-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #B91C1C;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.logout-btn {
-  background: none;
-  border: none;
-  color: #B91C1C;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: all 0.2s;
-  min-width: 32px;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.logout-btn:hover {
-  background-color: #B91C1C;
-  color: white;
-}
+/* Removed main header styles since we removed the main header */
 
 .content {
   flex: 1;
@@ -647,30 +558,13 @@ onUnmounted(() => {
     margin-left: 0;
   }
   
-  .mobile-menu-btn {
-    display: flex;
-  }
+  /* Mobile menu button now only exists in mobile header */
   
   .sidebar-toggle {
     display: none;
   }
   
-  .header {
-    padding: 1rem;
-  }
-  
-  .header-left h1 {
-    font-size: 1.25rem;
-  }
-  
-  .user-menu {
-    padding: 0.5rem;
-    max-width: 120px;
-  }
-  
-  .user-name {
-    display: none;
-  }
+  /* Removed mobile header styles since we removed the main header */
   
   .content {
     padding: 1rem;
@@ -683,18 +577,7 @@ onUnmounted(() => {
     width: 100vw;
   }
   
-  .header {
-    padding: 0.75rem;
-  }
-  
-  .header-left h1 {
-    font-size: 1.1rem;
-  }
-  
-  .user-menu {
-    gap: 0.5rem;
-    padding: 0.25rem;
-  }
+  /* Removed small mobile header styles since we removed the main header */
   
   .content {
     padding: 0.75rem;
@@ -718,25 +601,91 @@ onUnmounted(() => {
     background-color: rgba(255, 255, 255, 0.1);
   }
   
-  .refresh-btn:hover,
-  .logout-btn:hover,
   .sidebar-toggle:hover,
   .mobile-menu-btn:hover {
     background-color: inherit;
   }
   
-  .refresh-btn:active {
-    background-color: #F8C9C9;
-  }
-  
-  .logout-btn:active {
-    background-color: #B91C1C;
-    color: white;
-  }
-  
   .sidebar-toggle:active,
   .mobile-menu-btn:active {
     background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 1023px) {
+  .mobile-header {
+    display: flex !important;
+  }
+  
+  /* Removed main-header reference since we removed the main header */
+  
+  .content {
+    margin-left: 0 !important;
+    padding-top: 80px !important; /* Account for mobile header */
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .sidebar-toggle {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex !important;
+    padding: 0 0.75rem;
+  }
+  
+  .mobile-logo span {
+    display: none;
+  }
+  
+  .content {
+    padding: 0.75rem;
+    padding-top: 80px;
+  }
+  
+  .mobile-user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-header {
+    padding: 0 0.5rem;
+    height: 56px;
+  }
+  
+  .mobile-logo {
+    font-size: 1rem;
+  }
+  
+  .mobile-logo i {
+    font-size: 1.1rem;
+  }
+  
+  .content {
+    padding: 0.5rem;
+    padding-top: 76px;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+  .mobile-header {
+    display: none;
+  }
+  
+  .content {
+    margin-left: 280px;
+    padding-top: 0;
+  }
+  
+  .admin-layout.sidebar-collapsed .content {
+    margin-left: 70px;
   }
 }
 </style> 

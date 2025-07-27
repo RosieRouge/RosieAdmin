@@ -1,109 +1,80 @@
 <template>
-  <div class="user-management">
-    <div class="header">
-      <div class="header-left">
-        <h1>User Management</h1>
-        <p>Manage users for the abortion support platform</p>
+  <div class="user-management" :class="viewClasses">
+    <!-- Compact Header with Stats -->
+    <div class="header-section">
+      <div class="header-top">
+        <div class="title-area">
+          <h1>User Management</h1>
+          <div class="quick-stats">
+            <span class="stat-item">
+              <i class="fas fa-users"></i>
+              {{ stats.total }} total
+            </span>
+            <span class="stat-item">
+              <i class="fas fa-user-md"></i>
+              {{ stats.counselors }} counselors
+            </span>
+            <span class="stat-item">
+              <i class="fas fa-user-shield"></i>
+              {{ stats.admins }} admins
+            </span>
+            <span class="stat-item active-users">
+              <i class="fas fa-check-circle"></i>
+              {{ stats.active }} active
+            </span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button @click="loadUsers" class="action-btn refresh" title="Refresh">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button @click="exportUsers" class="action-btn export" title="Export">
+            <i class="fas fa-download"></i>
+          </button>
+          <button class="btn btn-primary" @click="showCreateUser = true">
+            <i class="fas fa-plus"></i>
+            <span>Add User</span>
+          </button>
+        </div>
       </div>
-      <div class="header-actions">
-        <button @click="loadUsers" class="btn btn-info">
-          <i class="fas fa-sync-alt"></i>
-          <span>Refresh</span>
-        </button>
-        <button @click="exportUsers" class="btn btn-secondary">
-          <i class="fas fa-download"></i>
-          <span>Export</span>
-        </button>
-        <button class="btn btn-primary" @click="showCreateUser = true">
-          <i class="fas fa-plus"></i>
-          <span>Create User</span>
-        </button>
-      </div>
-    </div>
 
-
-
-    <!-- Quick Stats -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon user">
-          <i class="fas fa-users"></i>
+      <!-- Compact Filters -->
+      <div class="filters-row">
+        <div class="search-input">
+          <i class="fas fa-search"></i>
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="Search users..."
+          />
         </div>
-        <div class="stat-content">
-          <h3>{{ stats.total }}</h3>
-          <p>Total Users</p>
-          <small>All registered users</small>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon counselor">
-          <i class="fas fa-user-md"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stats.counselors }}</h3>
-          <p>Counselors</p>
-          <small>Support providers</small>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon admin">
-          <i class="fas fa-user-shield"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stats.admins }}</h3>
-          <p>Admins</p>
-          <small>System administrators</small>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon active">
-          <i class="fas fa-check-circle"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stats.active }}</h3>
-          <p>Active</p>
-          <small>Currently active users</small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters and Search -->
-    <div class="filters-section">
-      <div class="search-bar">
-        <i class="fas fa-search"></i>
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Search users by name or email..."
-        />
-      </div>
-      
-      <div class="filters">
-        <select v-model="roleFilter" @change="applyFilters">
-          <option value="">All Roles</option>
-          <option value="client">Client</option>
-          <option value="counselor">Counselor</option>
-          <option value="admin">Admin</option>
-          <option value="super_admin">Super Admin</option>
-        </select>
         
-        <select v-model="statusFilter" @change="applyFilters">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-        
-        <select v-model="sortBy" @change="applyFilters">
-          <option value="created_at">Newest First</option>
-          <option value="name">Name A-Z</option>
-          <option value="email">Email A-Z</option>
-          <option value="last_active">Last Active</option>
-        </select>
+        <div class="filter-controls">
+          <select v-model="roleFilter" @change="applyFilters">
+            <option value="">All Roles</option>
+            <option value="client">Client</option>
+            <option value="counselor">Counselor</option>
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+          
+          <select v-model="statusFilter" @change="applyFilters">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          
+          <select v-model="sortBy" @change="applyFilters">
+            <option value="created_at">Newest First</option>
+            <option value="name">Name A-Z</option>
+            <option value="email">Email A-Z</option>
+            <option value="last_active">Last Active</option>
+          </select>
 
-        <button @click="clearFilters" class="clear-filters-btn">
-          <i class="fas fa-times"></i>
-          <span>Clear</span>
-        </button>
+          <button @click="clearFilters" class="clear-btn" title="Clear filters">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -152,24 +123,33 @@
         <div v-for="user in paginatedUsers" :key="user.id" class="mobile-user-card">
           <div class="mobile-user-header">
             <input type="checkbox" v-model="selectedUsers" :value="user.id">
-            <div class="user-avatar">
-              <i class="fas fa-user"></i>
-            </div>
-            <div class="mobile-user-info">
+            <div class="mobile-user-profile">
               <div class="mobile-user-name">{{ getUserDisplayName(user) }}</div>
+              <div class="user-avatar">
+                <img v-if="user.avatar" :src="user.avatar" :alt="getUserDisplayName(user)" />
+                <i v-else class="fas fa-user"></i>
+              </div>
               <div class="mobile-user-email">{{ getUserDisplayEmail(user) }}</div>
             </div>
           </div>
           
           <div class="mobile-user-details">
             <div class="mobile-detail-item">
-              <div class="mobile-detail-label">Role</div>
+              <div class="mobile-detail-label">Roles</div>
               <div class="mobile-detail-value">
                 <span v-if="!user.role" class="role-badge client">
                   Client
                 </span>
                 <span v-else class="role-badge" :class="user.role">
                   {{ formatRole(user.role) }}
+                </span>
+                <!-- Show additional roles -->
+                <span v-if="user.roles && user.roles.length > 0" 
+                      v-for="role in user.roles.filter(r => r !== user.role)" 
+                      :key="role"
+                      class="role-badge additional" 
+                      :class="role">
+                  {{ formatRole(role) }}
                 </span>
               </div>
             </div>
@@ -190,7 +170,7 @@
             
             <div class="mobile-detail-item">
               <div class="mobile-detail-label">Last Active</div>
-              <div class="mobile-detail-value">{{ user.last_login ? formatDate(user.last_login) : 'Never' }}</div>
+              <div class="mobile-detail-value">{{ getLastActive(user) }}</div>
             </div>
           </div>
           
@@ -202,6 +182,22 @@
               <button @click="resetUserPassword(user)" class="mobile-action-btn reset">
                 <i class="fas fa-key"></i>
                 <span>Reset Password</span>
+              </button>
+              <button 
+                v-if="!hasCounselorRole(user)" 
+                @click="addCounselorRoleToUser(user)" 
+                class="mobile-action-btn counselor"
+              >
+                <i class="fas fa-user-md"></i>
+                <span>Add Counselor</span>
+              </button>
+              <button 
+                v-else 
+                @click="removeCounselorRoleFromUser(user)" 
+                class="mobile-action-btn remove-counselor"
+              >
+                <i class="fas fa-user-times"></i>
+                <span>Remove Counselor</span>
               </button>
               <button @click="toggleUserStatus(user)" class="mobile-action-btn toggle">
                 <i class="fas" :class="user.is_active ? 'fa-pause' : 'fa-play'"></i>
@@ -215,160 +211,173 @@
         </div>
       </div>
 
-      <table class="users-table">
-        <thead>
-          <tr>
-            <th class="checkbox-col">
-              <input type="checkbox" v-model="selectAll" @change="toggleSelectAll">
-            </th>
-            <th>User</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Joined</th>
-            <th>Last Active</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in paginatedUsers" :key="user.id" class="user-row">
-            <td class="checkbox-col">
-              <input type="checkbox" v-model="selectedUsers" :value="user.id">
-            </td>
-            
-            <td class="user-cell">
-              <div class="user-info">
-                <div class="user-avatar">
-                  <i class="fas fa-user"></i>
-                </div>
-                <div class="user-details">
-                  <div class="user-name" :title="getUserDisplayName(user)">{{ getUserDisplayName(user) }}</div>
-                  <div class="user-id" :title="user.id">ID: {{ user.id.slice(0, 8) }}...</div>
-                </div>
+      <!-- Desktop now uses mobile card layout too -->
+      <div class="desktop-user-list">
+        <div v-for="user in paginatedUsers" :key="user.id" class="desktop-user-card">
+          <div class="desktop-user-header">
+            <input type="checkbox" v-model="selectedUsers" :value="user.id">
+            <div class="desktop-user-profile">
+              <div class="user-avatar">
+                <img v-if="user.avatar" :src="user.avatar" :alt="getUserDisplayName(user)" />
+                <i v-else class="fas fa-user"></i>
               </div>
-            </td>
-            
-            <td class="email-cell">
-              <div class="email" :title="getUserDisplayEmail(user)">{{ getUserDisplayEmail(user) }}</div>
-            </td>
-            
-            <td class="role-cell">
-              <div class="role-management" @click="toggleRoleDropdown(user.id, $event)">
-                <div class="role-display">
-                  <span v-if="!user.role" class="role-badge client">
-                    Client
-                  </span>
-                  <span v-else class="role-badge" :class="user.role">
-                    {{ formatRole(user.role) }}
-                  </span>
-                  <i class="fas fa-chevron-down role-dropdown-icon"></i>
-                </div>
-                
-                <!-- Role Dropdown -->
-                <div v-if="roleDropdownOpen === user.id" class="role-dropdown-menu" @click.stop>
-                  <div class="role-dropdown-header">
-                    <strong>Manage Roles for {{ getUserDisplayName(user) }}</strong>
-                  </div>
-                  <div class="role-dropdown-options">
-                    <div 
-                      v-for="role in roleOptions" 
-                      :key="role.value"
-                      class="role-dropdown-option"
-                      :class="{ 
-                        active: user.role === role.value,
-                        disabled: !canModifyRole(user, role.value)
-                      }"
-                      @click="handleRoleChange(user, role.value)"
-                    >
-                      <div class="role-option-content">
-                        <div class="role-option-left">
-                          <span class="role-indicator" :class="role.value"></span>
-                          <span class="role-label">{{ role.label }}</span>
-                        </div>
-                        <div class="role-option-right">
-                          <i v-if="user.role === role.value" class="fas fa-check role-check"></i>
-                          <i v-else class="fas fa-plus role-plus"></i>
-                          <i v-if="!canModifyRole(user, role.value)" class="fas fa-lock role-lock" title="Insufficient permissions"></i>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div class="desktop-user-name">{{ getUserDisplayName(user) }}</div>
+              <div class="desktop-user-email">{{ getUserDisplayEmail(user) }}</div>
+            </div>
+          </div>
+          
+          <div class="desktop-user-details">
+            <div class="desktop-detail-item">
+              <div class="desktop-detail-label">Roles</div>
+              <div class="desktop-detail-value">
+                <span v-if="!user.role" class="role-badge client">
+                  Client
+                </span>
+                <span v-else class="role-badge" :class="user.role">
+                  {{ formatRole(user.role) }}
+                </span>
+                <!-- Show additional roles -->
+                <span v-if="user.roles && user.roles.length > 0" 
+                      v-for="role in user.roles.filter(r => r !== user.role)" 
+                      :key="role"
+                      class="role-badge additional" 
+                      :class="role">
+                  {{ formatRole(role) }}
+                </span>
               </div>
-            </td>
+            </div>
             
-            <td class="status-cell">
-              <span class="status-badge" :class="user.is_active ? 'active' : 'inactive'">
-                {{ user.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            
-            <td class="date-cell">
-              <div class="date">{{ formatDate(user.created_at) }}</div>
-            </td>
-            
-            <td class="date-cell">
-              <div class="date">{{ getLastActive(user) }}</div>
-            </td>
-            
-            <td class="actions-cell">
-              <div class="actions">
-                <button @click="editUser(user)" class="action-btn edit" title="Edit User">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button @click="resetUserPassword(user)" class="action-btn info" title="Reset Password">
-                  <i class="fas fa-key"></i>
-                </button>
-                <button 
-                  @click="toggleUserStatus(user)" 
-                  class="action-btn" 
-                  :class="user.is_active ? 'warning' : 'success'"
-                  :title="user.is_active ? 'Deactivate User' : 'Activate User'"
-                >
-                  <i class="fas" :class="user.is_active ? 'fa-pause' : 'fa-play'"></i>
-                </button>
-                <button @click="deleteUser(user)" class="action-btn danger" title="Delete User">
-                  <i class="fas fa-trash"></i>
-                </button>
+            <div class="desktop-detail-item">
+              <div class="desktop-detail-label">Status</div>
+              <div class="desktop-detail-value">
+                <span class="status-badge" :class="user.is_active ? 'active' : 'inactive'">
+                  {{ user.is_active ? 'Active' : 'Inactive' }}
+                </span>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Pagination -->
-      <div class="pagination">
-        <div class="pagination-info">
-          Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredUsers.length) }} of {{ filteredUsers.length }} users
+            </div>
+            
+            <div class="desktop-detail-item">
+              <div class="desktop-detail-label">Joined</div>
+              <div class="desktop-detail-value">{{ user.created_at ? formatDate(user.created_at) : 'Unknown' }}</div>
+            </div>
+            
+            <div class="desktop-detail-item">
+              <div class="desktop-detail-label">Last Active</div>
+              <div class="desktop-detail-value">{{ getLastActive(user) }}</div>
+            </div>
+          </div>
+          
+          <div class="desktop-user-actions">
+            <button @click="editUser(user)" class="desktop-action-btn edit">
+              <i class="fas fa-edit"></i>
+              <span>Edit</span>
+            </button>
+            <button @click="resetUserPassword(user)" class="desktop-action-btn reset">
+              <i class="fas fa-key"></i>
+              <span>Reset Password</span>
+            </button>
+            <button 
+              v-if="!hasCounselorRole(user)" 
+              @click="addCounselorRoleToUser(user)" 
+              class="desktop-action-btn counselor"
+            >
+              <i class="fas fa-user-md"></i>
+              <span>Add Counselor</span>
+            </button>
+            <button 
+              v-else 
+              @click="removeCounselorRoleFromUser(user)" 
+              class="desktop-action-btn remove-counselor"
+            >
+              <i class="fas fa-user-times"></i>
+              <span>Remove Counselor</span>
+            </button>
+            <button @click="toggleUserStatus(user)" class="desktop-action-btn toggle">
+              <i class="fas" :class="user.is_active ? 'fa-pause' : 'fa-play'"></i>
+              <span>{{ user.is_active ? 'Deactivate' : 'Activate' }}</span>
+            </button>
+            <button @click="deleteUser(user)" class="desktop-action-btn delete">
+              <i class="fas fa-trash"></i>
+              <span>Delete</span>
+            </button>
+          </div>
         </div>
+      </div>
+
+      <!-- Enhanced Pagination -->
+      <div class="pagination-section">
+        <div class="pagination-info">
+          <span class="results-count">
+            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredUsers.length) }} of {{ filteredUsers.length }} users
+          </span>
+          <span class="page-info">
+            Page {{ currentPage }} of {{ totalPages }}
+          </span>
+        </div>
+        
         <div class="pagination-controls">
           <button 
-            @click="currentPage = Math.max(1, currentPage - 1)" 
+            @click="goToFirstPage" 
             :disabled="currentPage === 1"
-            class="pagination-btn"
+            class="pagination-btn first"
+            title="First Page"
           >
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-angle-double-left"></i>
+            <span>First</span>
           </button>
           
-          <span class="page-numbers">
+          <button 
+            @click="goToPreviousPage" 
+            :disabled="currentPage === 1"
+            class="pagination-btn prev"
+            title="Previous Page"
+          >
+            <i class="fas fa-chevron-left"></i>
+            <span>Previous</span>
+          </button>
+          
+          <div class="page-numbers">
             <button 
               v-for="page in visiblePages" 
               :key="page"
-              @click="currentPage = page"
+              @click="goToPage(page)"
               :class="{ active: page === currentPage }"
               class="page-btn"
+              :title="`Go to page ${page}`"
             >
               {{ page }}
             </button>
-          </span>
+          </div>
           
           <button 
-            @click="currentPage = Math.min(totalPages, currentPage + 1)" 
+            @click="goToNextPage" 
             :disabled="currentPage === totalPages"
-            class="pagination-btn"
+            class="pagination-btn next"
+            title="Next Page"
           >
+            <span>Next</span>
             <i class="fas fa-chevron-right"></i>
           </button>
+          
+          <button 
+            @click="goToLastPage" 
+            :disabled="currentPage === totalPages"
+            class="pagination-btn last"
+            title="Last Page"
+          >
+            <span>Last</span>
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+        
+        <div class="page-size-selector">
+          <label for="pageSize">Items per page:</label>
+          <select id="pageSize" v-model="itemsPerPage" @change="handlePageSizeChange">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
         </div>
       </div>
     </div>
@@ -523,6 +532,9 @@
       </div>
     </div>
 
+    <!-- Bottom spacer for better scrolling -->
+    <div class="bottom-spacer"></div>
+
     <!-- Toast -->
     <div v-if="toast.show" class="toast" :class="toast.type">
       {{ toast.message }}
@@ -536,8 +548,12 @@ import { useAuthStore } from '@/stores/auth'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import type { User, UserRole } from '@/types'
+import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
 
 const authStore = useAuthStore()
+
+// Responsive layout
+const { viewClasses, setupResponsiveLayout } = useResponsiveLayout()
 
 const users = ref<User[]>([])
 const loading = ref(false)
@@ -551,7 +567,7 @@ const selectedUsers = ref<string[]>([])
 const selectAll = ref(false)
 const roleDropdownOpen = ref<string | null>(null)
 const currentPage = ref(1)
-const itemsPerPage = ref(10)
+const itemsPerPage = ref(20)
 
 const newUser = ref({
   name: '',
@@ -581,7 +597,10 @@ const roleOptions = [
 
 const stats = computed(() => ({
   total: users.value.length,
-  counselors: users.value.filter(u => u.role === 'counselor').length,
+  counselors: users.value.filter(u => {
+    // Count users who have counselor as primary role OR in their roles array
+    return u.role === 'counselor' || (u.roles && u.roles.includes('counselor'))
+  }).length,
   admins: users.value.filter(u => u.role === 'admin' || u.role === 'super_admin').length,
   active: users.value.filter(u => u.is_active).length
 }))
@@ -640,6 +659,31 @@ const visiblePages = computed(() => {
   
   return pages
 })
+
+// Pagination methods
+const goToFirstPage = () => {
+  currentPage.value = 1
+}
+
+const goToPreviousPage = () => {
+  currentPage.value = Math.max(1, currentPage.value - 1)
+}
+
+const goToNextPage = () => {
+  currentPage.value = Math.min(totalPages.value, currentPage.value + 1)
+}
+
+const goToLastPage = () => {
+  currentPage.value = totalPages.value
+}
+
+const goToPage = (page: number) => {
+  currentPage.value = page
+}
+
+const handlePageSizeChange = () => {
+  currentPage.value = 1 // Reset to first page when changing page size
+}
 
 const loadUsers = async () => {
   loading.value = true
@@ -1113,6 +1157,10 @@ const getLastActive = (user: User) => {
   if (user.last_active) {
     return formatDate(user.last_active)
   }
+  // If no last_active, use updated_at as fallback
+  if (user.updated_at && user.updated_at !== user.created_at) {
+    return formatDate(user.updated_at)
+  }
   return 'Never'
 }
 
@@ -1136,6 +1184,49 @@ const getUserDisplayName = (user: any) => {
 
 const getUserDisplayEmail = (user: any) => {
   return user.email || 'No email provided'
+}
+
+// Check if user has counselor role (primary or additional)
+const hasCounselorRole = (user: User) => {
+  return user.role === 'counselor' || (user.roles && user.roles.includes('counselor'))
+}
+
+// Add counselor role to user
+const addCounselorRoleToUser = async (user: User) => {
+  if (hasCounselorRole(user)) {
+    showToast('User already has counselor role', 'error')
+    return
+  }
+
+  try {
+    const { error } = await authStore.addCounselorRole(user.id)
+    if (error) throw error
+
+    showToast('Counselor role added successfully!')
+    await loadUsers()
+  } catch (error: any) {
+    showToast('Failed to add counselor role: ' + error.message, 'error')
+  }
+}
+
+// Remove counselor role from user
+const removeCounselorRoleFromUser = async (user: User) => {
+  if (!hasCounselorRole(user)) {
+    showToast('User does not have counselor role', 'error')
+    return
+  }
+
+  if (confirm(`Are you sure you want to remove counselor role from ${getUserDisplayName(user)}?`)) {
+    try {
+      const { error } = await authStore.removeCounselorRole(user.id)
+      if (error) throw error
+
+      showToast('Counselor role removed successfully!')
+      await loadUsers()
+    } catch (error: any) {
+      showToast('Failed to remove counselor role: ' + error.message, 'error')
+    }
+  }
 }
 
 // Check if current user can modify a specific role for another user
@@ -1362,50 +1453,198 @@ const loadAllUsersWithRLSBypass = async () => {
 
 onMounted(() => {
   loadUsers()
+  
+  // Setup responsive layout
+  const cleanup = setupResponsiveLayout()
+  
+  onUnmounted(() => {
+    cleanup()
+  })
 })
 </script>
 
 <style scoped>
 .user-management {
-  padding: clamp(1rem, 4vw, 2rem);
+  padding: 0.75rem 1rem 2rem 1rem; /* Added bottom padding for scrolling */
   max-width: 100%;
   overflow-x: hidden;
+  position: fixed;
+  top: 60px;
+  left: 280px;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  transition: left 0.3s ease, padding 0.3s ease;
+  background: #f8f9fa;
+  min-height: 100vh;
 }
 
-.header {
+/* Responsive layout adjustments */
+@media (max-width: 1023px) {
+  .user-management {
+    left: 0 !important;
+    top: 80px !important; /* Mobile header height */
+    bottom: 80px !important; /* Mobile bottom nav */
+    padding: 1rem 1rem 3rem 1rem !important; /* Extra bottom padding for mobile */
+  }
+}
+
+/* Sidebar state detection */
+@media (min-width: 1024px) {
+  /* When sidebar is collapsed (70px wide) */
+  .user-management.sidebar-collapsed {
+    left: 70px;
+  }
+}
+
+/* New Compact Header Styles */
+.header-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.header-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: clamp(1.5rem, 3vw, 2rem);
+  margin-bottom: 0.75rem;
   gap: 1rem;
-  flex-wrap: wrap;
 }
 
-.header-left {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.header h1 {
+.title-area h1 {
   color: #B91C1C;
-  margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
   line-height: 1.2;
 }
 
-.header p {
+.quick-stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
   color: #666;
-  margin: 0.25rem 0 0 0;
-  font-size: clamp(0.875rem, 2vw, 1rem);
+  font-weight: 500;
+}
+
+.stat-item i {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.stat-item.active-users {
+  color: #10b981;
 }
 
 .header-actions {
   display: flex;
-  gap: clamp(0.5rem, 1vw, 0.75rem);
-  flex-wrap: wrap;
+  gap: 0.5rem;
   align-items: center;
+}
+
+.action-btn {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.action-btn:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.action-btn.refresh:hover {
+  color: #3b82f6;
+}
+
+.action-btn.export:hover {
+  color: #10b981;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input i {
+  color: #B91C1C;
+  font-size: 0.875rem;
+}
+
+.search-input input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filter-controls select {
+  padding: 0.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+  min-width: 120px;
+}
+
+.clear-btn {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.clear-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
 }
 
 .stats-grid {
@@ -1532,37 +1771,38 @@ onMounted(() => {
 
 .table-container {
   background: white;
-  border-radius: clamp(6px, 1vw, 8px);
+  border-radius: 8px;
   overflow-x: auto;
   overflow-y: visible;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   position: relative;
-  margin-bottom: clamp(1rem, 2vw, 1.5rem);
+  margin-bottom: 2rem; /* Increased margin for better scrolling */
 }
 
 .users-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: clamp(900px, 80vw, 1200px);
+  min-width: 800px;
 }
 
 .users-table th {
-  background: #F8C9C9;
-  padding: clamp(1rem, 2vw, 1.5rem);
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
   text-align: left;
   font-weight: 600;
-  color: #B91C1C;
-  font-size: clamp(0.875rem, 1.5vw, 0.95rem);
+  color: #333;
+  font-size: 0.875rem;
   letter-spacing: 0.025em;
   white-space: nowrap;
+  border-bottom: 2px solid #e9ecef;
 }
 
 .users-table td {
-  padding: clamp(1rem, 2.5vw, 1.75rem) clamp(0.75rem, 2vw, 1.5rem);
-  border-bottom: 1px solid #f0f0f0;
-  vertical-align: top;
-  line-height: 1.6;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: middle;
+  line-height: 1.4;
 }
 
 .checkbox-col {
@@ -1571,14 +1811,28 @@ onMounted(() => {
 }
 
 .user-cell {
-  min-width: 280px;
+  min-width: 250px;
   width: 28%;
 }
 
 .user-info {
   display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  text-align: center;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  width: 100%;
 }
 
 .user-avatar {
@@ -1591,52 +1845,30 @@ onMounted(() => {
   color: white;
   background: #B91C1C;
   flex-shrink: 0;
-  margin-top: 0.125rem;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
   overflow: hidden;
 }
 
-.user-name {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 0.375rem;
-  font-size: 1rem;
-  line-height: 1.4;
-  word-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
-.user-id {
-  font-size: 0.85rem;
+.user-email {
+  font-size: 0.8rem;
   color: #666;
-  line-height: 1.4;
+  line-height: 1.3;
+  text-align: center;
   word-wrap: break-word;
   word-break: break-all;
-}
-
-.email-cell {
-  min-width: 240px;
-  width: 22%;
-}
-
-.email {
-  color: #555;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  word-wrap: break-word;
-  word-break: break-all;
+  opacity: 0.9;
+  width: 100%;
 }
 
 .role-cell {
-  min-width: 180px;
-  width: 16%;
+  min-width: 140px;
+  width: 12%;
   position: relative;
   overflow: visible;
 }
@@ -1821,6 +2053,12 @@ onMounted(() => {
   color: #92400e;
 }
 
+.role-badge.additional {
+  opacity: 0.8;
+  font-size: 0.7rem;
+  margin-left: 0.25rem;
+}
+
 .role-badge.clickable {
   cursor: pointer;
 }
@@ -1913,30 +2151,45 @@ onMounted(() => {
 }
 
 .actions-cell {
-  min-width: 100px;
-  width: 8%;
+  min-width: 320px;
+  width: 25%;
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .action-btn {
-  background: none;
-  border: none;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 0;
+  padding: 0.5rem 0.75rem;
   margin: 0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 36px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  white-space: nowrap;
 }
 
 .action-btn.edit {
   color: #B91C1C;
+  border-color: #F8C9C9;
 }
 
 .action-btn.edit:hover {
   color: #991b1b;
+  background: #F8C9C9;
+  border-color: #B91C1C;
 }
 
 .action-btn.warning {
@@ -1957,10 +2210,46 @@ onMounted(() => {
 
 .action-btn.info {
   color: #3b82f6;
+  border-color: #dbeafe;
 }
 
 .action-btn.info:hover {
   color: #1d4ed8;
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.action-btn.counselor {
+  color: #10b981;
+  border-color: #d1fae5;
+}
+
+.action-btn.counselor:hover {
+  color: #047857;
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
+.action-btn.remove-counselor {
+  color: #f59e0b;
+  border-color: #fef3c7;
+}
+
+.action-btn.remove-counselor:hover {
+  color: #d97706;
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.action-btn.danger {
+  color: #dc2626;
+  border-color: #fee2e2;
+}
+
+.action-btn.danger:hover {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #dc2626;
 }
 
 .mobile-action-btn.reset {
@@ -1970,6 +2259,24 @@ onMounted(() => {
 
 .mobile-action-btn.reset:hover {
   background: #1d4ed8;
+}
+
+.mobile-action-btn.counselor {
+  background: #10b981;
+  color: white;
+}
+
+.mobile-action-btn.counselor:hover {
+  background: #047857;
+}
+
+.mobile-action-btn.remove-counselor {
+  background: #f59e0b;
+  color: white;
+}
+
+.mobile-action-btn.remove-counselor:hover {
+  background: #d97706;
 }
 
 .modal-overlay {
@@ -2110,86 +2417,143 @@ onMounted(() => {
   background: #dc2626;
 }
 
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: clamp(0.75rem, 2vw, 1rem);
+/* Enhanced Pagination Styles */
+.pagination-section {
   background: white;
-  border-top: 1px solid #f0f0f0;
-  gap: clamp(0.5rem, 1vw, 1rem);
-  flex-wrap: wrap;
+  border-radius: 8px;
+  margin-top: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  overflow: hidden;
 }
 
 .pagination-info {
-  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 0.875rem;
   color: #666;
-  text-align: center;
-  flex: 1 1 100%;
-  order: 2;
+}
+
+.pagination-info .results-count {
+  font-weight: 600;
+  color: #333;
+}
+
+.pagination-info .page-info {
+  color: #B91C1C;
+  font-weight: 500;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: clamp(0.25rem, 1vw, 0.5rem);
-  flex: 1 1 100%;
   justify-content: center;
-  order: 1;
+  gap: 0.5rem;
+  padding: 1rem;
+  flex-wrap: wrap;
 }
 
 .pagination-btn {
-  padding: clamp(0.375rem, 1vw, 0.5rem);
-  border: 1px solid #ddd;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e9ecef;
   background: white;
-  border-radius: clamp(4px, 0.5vw, 6px);
+  border-radius: 6px;
   cursor: pointer;
   color: #666;
-  min-width: clamp(36px, 8vw, 44px);
-  min-height: clamp(36px, 8vw, 44px);
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: clamp(0.8rem, 1.25vw, 0.9rem);
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-height: 40px;
 }
 
 .pagination-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background: #f8f9fa;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: #f5f5f5;
+  background: #f8f9fa;
+  border-color: #B91C1C;
+  color: #B91C1C;
+}
+
+.pagination-btn.first,
+.pagination-btn.last {
+  font-weight: 600;
 }
 
 .page-numbers {
   display: flex;
-  gap: clamp(0.125rem, 0.5vw, 0.25rem);
+  gap: 0.25rem;
+  margin: 0 1rem;
 }
 
 .page-btn {
-  padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.25vw, 0.75rem);
-  border: 1px solid #ddd;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e9ecef;
   background: white;
-  border-radius: clamp(4px, 0.5vw, 6px);
+  border-radius: 6px;
   cursor: pointer;
   color: #666;
-  min-width: clamp(32px, 7vw, 44px);
-  min-height: clamp(32px, 7vw, 44px);
+  min-width: 40px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.8rem, 1.25vw, 0.9rem);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .page-btn:hover {
-  background: #f5f5f5;
+  background: #f8f9fa;
+  border-color: #B91C1C;
+  color: #B91C1C;
 }
 
 .page-btn.active {
   background: #B91C1C;
   color: white;
   border-color: #B91C1C;
+  font-weight: 600;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  font-size: 0.875rem;
+}
+
+.page-size-selector label {
+  color: #666;
+  font-weight: 500;
+}
+
+.page-size-selector select {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 0.875rem;
+  min-width: 80px;
+}
+
+.bottom-spacer {
+  height: 2rem;
+  flex-shrink: 0;
 }
 
 /* Responsive Design */
@@ -2298,8 +2662,8 @@ onMounted(() => {
     gap: 0.5rem;
   }
   
-  /* Hide desktop table on mobile */
-  .users-table {
+  /* Hide desktop cards on mobile */
+  .desktop-user-list {
     display: none !important;
   }
   
@@ -2442,17 +2806,42 @@ onMounted(() => {
   }
   
   /* Mobile pagination */
+  .pagination-section {
+    margin-top: 1rem;
+  }
+  
   .pagination-info {
-    order: 2;
-    margin-top: clamp(0.25rem, 1vw, 0.5rem);
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
   }
   
   .pagination-controls {
-    order: 1;
+    gap: 0.25rem;
+  }
+  
+  .pagination-btn span {
+    display: none;
+  }
+  
+  .pagination-btn {
+    min-width: 44px;
+    padding: 0.5rem;
   }
   
   .page-numbers {
-    gap: clamp(0.0625rem, 0.25vw, 0.125rem);
+    margin: 0 0.5rem;
+    gap: 0.125rem;
+  }
+  
+  .page-btn {
+    min-width: 36px;
+    padding: 0.375rem;
+  }
+  
+  .page-size-selector {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 
@@ -2472,6 +2861,178 @@ onMounted(() => {
   .filters select {
     min-width: 80px;
   }
+}
+
+/* Desktop User Cards (same layout as mobile) */
+.desktop-user-list {
+  display: block;
+}
+
+.desktop-user-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid #f0f0f0;
+}
+
+.desktop-user-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.desktop-user-header input[type="checkbox"] {
+  margin: 0;
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.desktop-user-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.desktop-user-name {
+  font-weight: 600;
+  color: #333;
+  word-break: break-word;
+  font-size: 1rem;
+  line-height: 1.3;
+  text-align: center;
+  width: 100%;
+}
+
+.desktop-user-email {
+  font-size: 0.85rem;
+  color: #666;
+  word-break: break-all;
+  line-height: 1.3;
+  text-align: center;
+  width: 100%;
+  opacity: 0.9;
+}
+
+.desktop-user-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  background: #f9f9f9;
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.desktop-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.desktop-detail-label {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.desktop-detail-value {
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.3;
+}
+
+.desktop-user-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.desktop-action-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.desktop-action-btn.edit {
+  color: #B91C1C;
+  border-color: #F8C9C9;
+}
+
+.desktop-action-btn.edit:hover {
+  background: #F8C9C9;
+  color: #991b1b;
+}
+
+.desktop-action-btn.reset {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.desktop-action-btn.reset:hover {
+  background: #1d4ed8;
+}
+
+.desktop-action-btn.counselor {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.desktop-action-btn.counselor:hover {
+  background: #047857;
+}
+
+.desktop-action-btn.remove-counselor {
+  background: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
+}
+
+.desktop-action-btn.remove-counselor:hover {
+  background: #d97706;
+}
+
+.desktop-action-btn.toggle {
+  color: #10b981;
+  border-color: #d1fae5;
+}
+
+.desktop-action-btn.toggle:hover {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.desktop-action-btn.delete {
+  color: #dc2626;
+  border-color: #fee2e2;
+}
+
+.desktop-action-btn.delete:hover {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 /* Mobile User Cards */
@@ -2514,7 +3075,11 @@ onMounted(() => {
     height: clamp(32px, 6vw, 40px);
   }
   
-  .mobile-user-info {
+  .mobile-user-profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
     flex: 1;
     min-width: 0;
   }
@@ -2522,10 +3087,11 @@ onMounted(() => {
   .mobile-user-name {
     font-weight: 600;
     color: #333;
-    margin-bottom: 0.25rem;
     word-break: break-word;
     font-size: clamp(0.9rem, 2vw, 1rem);
     line-height: 1.3;
+    text-align: center;
+    width: 100%;
   }
   
   .mobile-user-email {
@@ -2533,6 +3099,9 @@ onMounted(() => {
     color: #666;
     word-break: break-all;
     line-height: 1.3;
+    text-align: center;
+    width: 100%;
+    opacity: 0.9;
   }
   
   .mobile-user-details {

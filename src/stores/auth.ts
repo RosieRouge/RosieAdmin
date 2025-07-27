@@ -11,16 +11,41 @@ export const useAuthStore = defineStore('auth', () => {
   const profile = ref<any>(null)
 
   const isAuthenticated = computed(() => !!user.value)
-  const isAdmin = computed(() => 
-    profile.value?.role === 'admin' || profile.value?.role === 'super_admin'
-  )
-  const isSuperAdmin = computed(() => profile.value?.role === 'super_admin')
-  const isCounselor = computed(() => profile.value?.role === 'counselor')
 
-  // Check if user has specific role
+  // Check if user has specific role (multi-role support)
   const hasRole = (role: UserRole) => {
-    return profile.value?.role === role
+    if (!profile.value) return false
+    
+    // Check primary role
+    if (profile.value.role === role) return true
+    
+    // Check additional roles array
+    if (profile.value.roles && profile.value.roles.includes(role)) return true
+    
+    return false
   }
+
+  const isAdmin = computed(() => 
+    hasRole('admin') || hasRole('super_admin')
+  )
+  const isSuperAdmin = computed(() => hasRole('super_admin'))
+  const isCounselor = computed(() => hasRole('counselor'))
+
+  // Get all user roles (multi-role support)
+  const getUserRoles = computed(() => {
+    if (!profile.value) return []
+    
+    const roles = [profile.value.role]
+    if (profile.value.roles) {
+      // Add additional roles that aren't already included
+      profile.value.roles.forEach((role: UserRole) => {
+        if (!roles.includes(role)) {
+          roles.push(role)
+        }
+      })
+    }
+    return roles
+  })
 
   // Get primary role (the user's role)
   const getPrimaryRole = computed(() => {
@@ -204,6 +229,53 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Forgot password - send reset email
+  const forgotPassword = async (email: string) => {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://admin.rosieapp.org/reset-password'
+      })
+
+      if (error) {
+        throw error
+      }
+
+      return { data, error: null }
+    } catch (error: any) {
+      console.error('Forgot password error:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Reset password with new password (after clicking email link)
+  const resetPassword = async (newPassword: string) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (error) {
+        throw error
+      }
+
+      // Update the user profile to mark password reset as completed
+      if (user.value?.id) {
+        await supabaseAdmin
+          .from('users')
+          .update({ 
+            password_reset_required: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.value.id)
+      }
+
+      return { data, error: null }
+    } catch (error: any) {
+      console.error('Reset password error:', error)
+      return { data: null, error }
+    }
+  }
+
   // Create user with specified role (admin functionality)
   const createUser = async (
     email: string, 
@@ -336,6 +408,145 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Add counselor role to user (multi-role support)
+  const addCounselorRole = async (userId: string, counselorData?: { specializations?: string[], license_number?: string, bio?: string }) => {
+    try {
+      // First get the current user data
+      const { data: currentUser, error: fetchError } = await supabaseAdmin
+        .from('users')
+        .select('role, roles')
+        .eq('id', userId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Check if user already has counselor role
+      const hasRole = currentUser.role === 'counselor' || 
+                     (currentUser.roles && Array.isArray(currentUser.roles) && currentUser.roles.includes('counselor'))
+
+      if (hasRole) {
+        return { data: null, error: new Error('User already has counselor role') }
+      }
+
+      // If current role is not counselor, add counselor to roles array or change primary role
+      if (currentUser.role !== 'counselor') {
+        const updateData: any = {
+          updated_at: new Date().toISOString()
+        }
+
+        // If roles column exists, use it for multiple roles
+        // Otherwise, change the primary role to counselor
+        try {
+          // Try to use roles column (multi-role approach)
+          let roles = currentUser.roles || []
+          if (!roles.includes('counselor')) {
+            roles.push('counselor')
+          }
+          updateData.roles = roles
+        } catch (rolesError) {
+          // If roles column doesn't exist, fallback to changing primary role
+          console.log('Roles column not available, updating primary role')
+          updateData.role = 'counselor'
+        }
+
+        // Add counselor-specific data if provided
+        if (counselorData) {
+          if (counselorData.specializations) updateData.specializations = counselorData.specializations
+          if (counselorData.license_number) updateData.license_number = counselorData.license_number
+          if (counselorData.bio) updateData.bio = counselorData.bio
+        }
+
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update(updateData)
+          .eq('id', userId)
+
+        if (error) {
+          // If error mentions roles column, try fallback approach
+          if (error.message?.includes('roles') && error.message?.includes('does not exist')) {
+            console.log('Roles column does not exist, using fallback approach')
+            
+            const fallbackData: any = {
+              role: 'counselor', // Change primary role instead
+              updated_at: new Date().toISOString()
+            }
+
+            // Add counselor-specific data
+            if (counselorData) {
+              if (counselorData.specializations) fallbackData.specializations = counselorData.specializations
+              if (counselorData.license_number) fallbackData.license_number = counselorData.license_number
+              if (counselorData.bio) fallbackData.bio = counselorData.bio
+            }
+
+            const { error: fallbackError } = await supabaseAdmin
+              .from('users')
+              .update(fallbackData)
+              .eq('id', userId)
+
+            if (fallbackError) throw fallbackError
+          } else {
+            throw error
+          }
+        }
+      }
+
+      return { data: { success: true }, error: null }
+    } catch (error: any) {
+      console.error('Add counselor role error:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Remove counselor role from user (multi-role support)
+  const removeCounselorRole = async (userId: string) => {
+    try {
+      // First get the current user data
+      const { data: currentUser, error: fetchError } = await supabaseAdmin
+        .from('users')
+        .select('role, roles')
+        .eq('id', userId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      if (currentUser.role === 'counselor') {
+        // If primary role is counselor, we need to change it to something else
+        // Default to client unless they have other roles
+        const otherRoles = (currentUser.roles || []).filter((role: UserRole) => role !== 'counselor')
+        const newPrimaryRole = otherRoles.length > 0 ? otherRoles[0] : 'client'
+        
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update({
+            role: newPrimaryRole,
+            roles: otherRoles.length > 1 ? otherRoles.slice(1) : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+
+        if (error) throw error
+      } else {
+        // Remove counselor from roles array
+        const roles = (currentUser.roles || []).filter((role: UserRole) => role !== 'counselor')
+        
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update({
+            roles: roles.length > 0 ? roles : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+
+        if (error) throw error
+      }
+
+      return { data: { success: true }, error: null }
+    } catch (error: any) {
+      console.error('Remove counselor role error:', error)
+      return { data: null, error }
+    }
+  }
+
   return {
     user: computed(() => user.value),
     session: computed(() => session.value),
@@ -352,9 +563,13 @@ export const useAuthStore = defineStore('auth', () => {
     initAuth,
     signIn,
     signOut,
+    forgotPassword,
+    resetPassword,
     createUser,
     resetUserPassword,
     updateUserRole,
+    addCounselorRole,
+    removeCounselorRole,
     loadProfile
   }
 })

@@ -1,73 +1,43 @@
 <template>
-  <div class="counselors-view">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-left">
-        <h1>Counselor Management</h1>
-        <p>Manage reproductive health support counselors and their assignments</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-outline" @click="refreshData">
-          <i class="fas fa-refresh" :class="{ 'fa-spin': loading }"></i>
-          Refresh
-        </button>
-        <button class="btn btn-secondary" @click="activeTab = 'applications'">
-          <i class="fas fa-file-alt"></i>
-          Applications
-          <span v-if="pendingApplications.length > 0" class="badge">{{ pendingApplications.length }}</span>
-        </button>
-        <button class="btn btn-primary" @click="showCreateCounselor = true">
-          <i class="fas fa-plus"></i>
-          Add Counselor
-        </button>
+  <div class="counselors-view" :class="viewClasses">
+    <!-- Compact Header -->
+    <div class="header-section">
+      <div class="header-top">
+        <div class="title-area">
+          <h1>Counselor Management</h1>
+          <div class="quick-stats">
+            <span class="stat-item">
+              <i class="fas fa-user-md"></i>
+              {{ stats.active }} active
+            </span>
+            <span class="stat-item">
+              <i class="fas fa-calendar-check"></i>
+              {{ stats.available }} available
+            </span>
+            <span class="stat-item">
+              <i class="fas fa-tasks"></i>
+              {{ stats.avgCases }} avg cases
+            </span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn refresh" @click="refreshData" title="Refresh">
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
+          </button>
+          <button class="btn btn-secondary" @click="activeTab = 'applications'">
+            <i class="fas fa-file-alt"></i>
+            Applications
+            <span v-if="pendingApplications.length > 0" class="badge">{{ pendingApplications.length }}</span>
+          </button>
+          <button class="btn btn-primary" @click="showCreateCounselor = true">
+            <i class="fas fa-plus"></i>
+            <span>Add Counselor</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="stats-grid">
-      <div class="stat-card active">
-        <div class="stat-icon">
-          <i class="fas fa-user-check"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stats.active }}</h3>
-          <p>Active Counselors</p>
-        </div>
-        <div class="stat-trend">
-          <span class="trend-up">+{{ stats.newThisMonth }}</span>
-        </div>
-      </div>
-      
-      <div class="stat-card available">
-        <div class="stat-icon">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stats.available }}</h3>
-          <p>Available Now</p>
-        </div>
-      </div>
-      
-      <div class="stat-card workload">
-        <div class="stat-icon">
-          <i class="fas fa-tasks"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stats.avgCases }}</h3>
-          <p>Avg Cases per Counselor</p>
-        </div>
-      </div>
-      
-      <div class="stat-card rating">
-        <div class="stat-icon">
-          <i class="fas fa-star"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ stats.avgRating }}</h3>
-          <p>Average Rating</p>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Tabs -->
     <div class="tabs-section">
@@ -95,46 +65,44 @@
 
     <!-- Counselors Tab -->
     <div v-if="activeTab === 'counselors'">
-      <!-- Filters -->
-      <div class="filters-section">
-        <div class="filters">
-          <div class="filter-group">
-            <label>Status:</label>
-            <select v-model="filters.status">
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="on_leave">On Leave</option>
-            </select>
-          </div>
+      <!-- Compact Filters -->
+      <div class="filters-row">
+        <div class="search-input">
+          <i class="fas fa-search"></i>
+          <input 
+            v-model="filters.search" 
+            type="text" 
+            placeholder="Search counselors..."
+          />
+        </div>
+        
+        <div class="filter-controls">
+          <select v-model="filters.status" @change="applyFilters">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
           
-          <div class="filter-group">
-            <label>Availability:</label>
-            <select v-model="filters.availability">
-              <option value="">All</option>
-              <option value="available">Available</option>
-              <option value="busy">Busy</option>
-              <option value="offline">Offline</option>
-            </select>
-          </div>
+          <select v-model="filters.availability" @change="applyFilters">
+            <option value="">All Availability</option>
+            <option value="available">Available</option>
+            <option value="busy">Busy</option>
+            <option value="offline">Offline</option>
+          </select>
           
-          <div class="filter-group">
-            <label>Specialization:</label>
-            <select v-model="filters.specialization">
-              <option value="">All Specializations</option>
-              <option value="abortion_care">Abortion Care</option>
-              <option value="contraception">Contraception</option>
-              <option value="pregnancy_counseling">Pregnancy Counseling</option>
-              <option value="emotional_support">Emotional Support</option>
-              <option value="legal_advocacy">Legal Advocacy</option>
-              <option value="crisis_intervention">Crisis Intervention</option>
-            </select>
-          </div>
-          
-          <div class="filter-group">
-            <label>Search:</label>
-            <input v-model="filters.search" type="text" placeholder="Search counselors..." />
-          </div>
+          <select v-model="filters.specialization" @change="applyFilters">
+            <option value="">All Specializations</option>
+            <option value="abortion_care">Abortion Care</option>
+            <option value="contraception">Contraception</option>
+            <option value="pregnancy_counseling">Pregnancy Counseling</option>
+            <option value="emotional_support">Emotional Support</option>
+            <option value="legal_advocacy">Legal Advocacy</option>
+            <option value="crisis_intervention">Crisis Intervention</option>
+          </select>
+
+          <button @click="clearFilters" class="clear-btn" title="Clear filters">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
       </div>
 
@@ -157,38 +125,32 @@
             </div>
           </div>
           
-          <div class="card-stats">
-            <div class="stat-item">
-              <i class="fas fa-briefcase"></i>
-              <span>{{ counselor.active_cases || 0 }} active cases</span>
+          <div class="card-bottom">
+            <div class="card-stats">
+              <div class="stat-item">
+                <i class="fas fa-briefcase"></i>
+                <span>{{ counselor.active_cases || 0 }} active cases</span>
+              </div>
             </div>
-            <div class="stat-item">
-              <i class="fas fa-clock"></i>
-              <span>{{ counselor.avg_response_time || 'N/A' }} avg response</span>
+            
+            <div class="card-actions">
+              <button class="btn btn-sm btn-outline" @click="viewCounselor(counselor)">
+                <i class="fas fa-eye"></i>
+                View
+              </button>
+              <button class="btn btn-sm btn-primary" @click="assignCase(counselor)">
+                <i class="fas fa-plus"></i>
+                Assign Case
+              </button>
+              <button 
+                class="btn btn-sm" 
+                :class="counselor.is_active ? 'btn-warning' : 'btn-success'"
+                @click="toggleCounselorStatus(counselor)"
+              >
+                <i class="fas" :class="counselor.is_active ? 'fa-pause' : 'fa-play'"></i>
+                {{ counselor.is_active ? 'Deactivate' : 'Activate' }}
+              </button>
             </div>
-            <div class="stat-item">
-              <i class="fas fa-star"></i>
-              <span>{{ counselor.rating || 'N/A' }} rating</span>
-            </div>
-          </div>
-          
-          <div class="card-actions">
-            <button class="btn btn-sm btn-outline" @click="viewCounselor(counselor)">
-              <i class="fas fa-eye"></i>
-              View
-            </button>
-            <button class="btn btn-sm btn-primary" @click="assignCase(counselor)">
-              <i class="fas fa-plus"></i>
-              Assign Case
-            </button>
-            <button 
-              class="btn btn-sm" 
-              :class="counselor.is_active ? 'btn-warning' : 'btn-success'"
-              @click="toggleCounselorStatus(counselor)"
-            >
-              <i class="fas" :class="counselor.is_active ? 'fa-pause' : 'fa-play'"></i>
-              {{ counselor.is_active ? 'Deactivate' : 'Activate' }}
-            </button>
           </div>
         </div>
       </div>
@@ -268,6 +230,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Bottom spacer for better scrolling -->
+    <div class="bottom-spacer"></div>
 
     <!-- Add Counselor Modal -->
     <div v-if="showCreateCounselor" class="modal-overlay" @click="closeCreateModal">
@@ -386,10 +351,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import type { User } from '@/types'
+import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
 
 // Extended User type for counselors with additional fields
 interface CounselorUser extends User {
@@ -397,6 +363,9 @@ interface CounselorUser extends User {
 }
 
 const authStore = useAuthStore()
+
+// Responsive layout
+const { viewClasses, setupResponsiveLayout } = useResponsiveLayout()
 
 // Component state
 const loading = ref(false)
@@ -452,7 +421,6 @@ const stats = computed(() => ({
   active: counselors.value.filter(c => c.is_active).length,
   available: counselors.value.filter(c => c.is_active && getAvailabilityStatus(c) === 'available').length,
   avgCases: Math.round(counselors.value.reduce((sum, c) => sum + (c.active_cases || 0), 0) / (counselors.value.length || 1)),
-  avgRating: (counselors.value.reduce((sum, c) => sum + (c.rating || 0), 0) / (counselors.value.length || 1)).toFixed(1),
   newThisMonth: counselors.value.filter(c => isThisMonth(c.created_at)).length
 }))
 
@@ -497,10 +465,11 @@ const filteredCounselors = computed(() => {
 const loadCounselors = async () => {
   loading.value = true
   try {
+    // Load users who have counselor as primary role
+    // We'll check for roles array in JavaScript since the column might not exist yet
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
-      .eq('role', 'counselor')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -509,9 +478,20 @@ const loadCounselors = async () => {
       return
     }
     
+    // Filter users who have counselor role (primary or additional)
+    const counselorUsers = (data || []).filter((user: any) => {
+      // Check primary role
+      if (user.role === 'counselor') return true
+      
+      // Check additional roles array (if it exists)
+      if (user.roles && Array.isArray(user.roles) && user.roles.includes('counselor')) return true
+      
+      return false
+    })
+    
     // Get real active case counts for each counselor
     const counselorsWithCases = await Promise.all(
-      (data || []).map(async (counselor: any) => {
+      counselorUsers.map(async (counselor: any) => {
         let activeCases = 0
         let avgResponseTime = 'N/A'
         
@@ -569,6 +549,17 @@ const loadCounselors = async () => {
 const refreshData = async () => {
   await loadCounselors()
   showToast('Counselors refreshed successfully')
+}
+
+const applyFilters = () => {
+  // Filters are reactive, no action needed
+}
+
+const clearFilters = () => {
+  filters.value.status = ''
+  filters.value.availability = ''
+  filters.value.specialization = ''
+  filters.value.search = ''
 }
 
 const viewCounselor = (counselor: CounselorUser) => {
@@ -803,41 +794,195 @@ const rejectApplication = async (application: any) => {
 onMounted(() => {
   loadCounselors()
   loadCounselorApplications()
+  
+  // Setup responsive layout
+  const cleanup = setupResponsiveLayout()
+  
+  onUnmounted(() => {
+    cleanup()
+  })
 })
 </script>
 
 <style scoped>
 .counselors-view {
-  padding: 2rem;
-  background: #FDE2E2;
+  padding: 0.75rem 1rem 2rem 1rem;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: fixed;
+  top: 60px;
+  left: 280px;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  transition: left 0.3s ease, padding 0.3s ease;
+  background: #f8f9fa;
   min-height: 100vh;
 }
 
-.header {
+/* Responsive layout adjustments */
+@media (max-width: 1023px) {
+  .counselors-view {
+    left: 0 !important;
+    top: 80px !important; /* Mobile header height */
+    bottom: 80px !important; /* Mobile bottom nav */
+    padding: 1rem !important;
+  }
+}
+
+/* Sidebar state detection */
+@media (min-width: 1024px) {
+  /* When sidebar is collapsed (70px wide) */
+  .counselors-view.sidebar-collapsed {
+    left: 70px;
+  }
+}
+
+/* New Compact Header Styles */
+.header-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.header-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 2rem;
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.1);
+  margin-bottom: 0.75rem;
+  gap: 1rem;
 }
 
-.header-left h1 {
+.title-area h1 {
   color: #B91C1C;
   margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
 }
 
-.header-left p {
+.quick-stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
   color: #666;
-  margin: 0;
+  font-weight: 500;
+}
+
+.stat-item i {
+  font-size: 0.8rem;
+  opacity: 0.8;
 }
 
 .header-actions {
   display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-btn {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.action-btn:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.action-btn.refresh:hover {
+  color: #3b82f6;
+}
+
+.filters-row {
+  display: flex;
   gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input i {
+  color: #B91C1C;
+  font-size: 0.875rem;
+}
+
+.search-input input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filter-controls select {
+  padding: 0.5rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+  min-width: 120px;
+}
+
+.clear-btn {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.clear-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
 }
 
 .stats-grid {
@@ -962,27 +1107,31 @@ onMounted(() => {
 
 .counselors-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
 .counselor-card {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(185, 28, 28, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  height: 140px;
 }
 
 .counselor-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(185, 28, 28, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(185, 28, 28, 0.15);
 }
 
 .card-header {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
 .counselor-avatar {
@@ -991,19 +1140,19 @@ onMounted(() => {
 }
 
 .counselor-avatar img {
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #F8C9C9;
+  border: 2px solid #F8C9C9;
 }
 
 .status-indicator {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 16px;
-  height: 16px;
+  bottom: 1px;
+  right: 1px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 2px solid white;
 }
@@ -1021,46 +1170,60 @@ onMounted(() => {
 }
 
 .counselor-info h3 {
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.125rem 0;
   color: #B91C1C;
-  font-size: 1.2rem;
+  font-size: 1rem;
+  line-height: 1.2;
 }
 
 .counselor-info .email {
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 0.375rem 0;
   color: #666;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .specializations {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  max-height: 2.4rem;
+  overflow: hidden;
 }
 
 .spec-badge {
   background: #F8C9C9;
   color: #B91C1C;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 8px;
+  font-size: 0.65rem;
   font-weight: 600;
+  line-height: 1.2;
+}
+
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  gap: 1rem;
 }
 
 .card-stats {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  padding: 0.375rem 0.5rem;
   background: #FDE2E2;
-  border-radius: 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
   color: #666;
+  line-height: 1.2;
 }
 
 .stat-item:last-child {
@@ -1069,13 +1232,15 @@ onMounted(() => {
 
 .stat-item i {
   color: #B91C1C;
-  width: 16px;
+  width: 12px;
+  font-size: 0.7rem;
 }
 
 .card-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.375rem;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .btn {
@@ -1131,8 +1296,9 @@ onMounted(() => {
 }
 
 .btn-sm {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  line-height: 1.2;
 }
 
 .modal-overlay {
@@ -1571,7 +1737,8 @@ onMounted(() => {
   }
   
   .counselor-card {
-    padding: 1.5rem;
+    padding: 1rem;
+    height: 140px;
   }
   
   .counselor-card:hover {
@@ -1579,65 +1746,64 @@ onMounted(() => {
   }
   
   .card-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  }
-  
-  .counselor-avatar {
-    align-self: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
   }
   
   .counselor-avatar img {
-    width: 70px;
-    height: 70px;
+    width: 40px;
+    height: 40px;
   }
   
   .status-indicator {
-    width: 18px;
-    height: 18px;
-    bottom: 3px;
-    right: 3px;
+    width: 12px;
+    height: 12px;
+    bottom: 1px;
+    right: 1px;
   }
   
   .counselor-info h3 {
-    font-size: 1.1rem;
-    text-align: center;
+    font-size: 1rem;
+    line-height: 1.2;
+    margin: 0 0 0.125rem 0;
   }
   
   .counselor-info .email {
-    text-align: center;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    margin: 0 0 0.375rem 0;
     word-break: break-all;
   }
   
-  .specializations {
-    justify-content: center;
+  .spec-badge {
+    font-size: 0.65rem;
+    padding: 0.125rem 0.375rem;
   }
   
-  .spec-badge {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
+  .card-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
   }
   
   .card-stats {
-    margin-bottom: 1.25rem;
-    padding: 1rem;
+    padding: 0.375rem 0.5rem;
   }
   
   .stat-item {
-    justify-content: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
   
   .card-actions {
-    flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.375rem;
   }
   
   .card-actions .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 0.75rem;
+    flex: 1;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
   }
   
   .applications-section {
@@ -1813,40 +1979,44 @@ onMounted(() => {
   }
   
   .counselor-card {
-    padding: 1.25rem;
+    padding: 1rem;
+    height: 140px;
   }
   
   .counselor-avatar img {
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
   }
   
   .status-indicator {
-    width: 16px;
-    height: 16px;
-    bottom: 2px;
-    right: 2px;
+    width: 12px;
+    height: 12px;
+    bottom: 1px;
+    right: 1px;
   }
   
   .counselor-info h3 {
     font-size: 1rem;
+    line-height: 1.2;
   }
   
   .counselor-info .email {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
   }
   
   .spec-badge {
     font-size: 0.65rem;
-    padding: 0.15rem 0.35rem;
+    padding: 0.125rem 0.375rem;
   }
   
   .card-stats {
-    padding: 0.75rem;
+    padding: 0.375rem 0.5rem;
   }
   
   .stat-item {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
   
   .application-card {
@@ -2246,5 +2416,10 @@ onMounted(() => {
 .sub-text {
   color: #6c757d !important;
   font-size: 0.9rem !important;
+}
+
+.bottom-spacer {
+  height: 2rem;
+  flex-shrink: 0;
 }
 </style> 

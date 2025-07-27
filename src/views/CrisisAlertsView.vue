@@ -1,5 +1,5 @@
 <template>
-  <div class="crisis-alerts">
+  <div class="crisis-alerts admin-view" :class="viewClasses">
     <div class="header">
       <div class="header-left">
         <h1>Crisis Alerts</h1>
@@ -147,9 +147,9 @@
                 <i class="fas fa-user"></i>
                 <span>{{ alert.client_name || 'Anonymous' }}</span>
               </div>
-              <div class="meta-item" v-if="alert.phone">
+              <div class="meta-item" v-if="alert.client_phone">
                 <i class="fas fa-phone"></i>
-                <span>{{ alert.phone }}</span>
+                <span>{{ alert.client_phone }}</span>
               </div>
               <div class="meta-item" v-if="alert.location">
                 <i class="fas fa-map-marker-alt"></i>
@@ -157,15 +157,15 @@
               </div>
             </div>
             
-            <!-- Support Types -->
-            <div v-if="alert.support_types && alert.support_types.length > 0" class="support-types">
+            <!-- Support Types from metadata -->
+            <div v-if="getSupportTypesFromMetadata(alert).length > 0" class="support-types">
               <div class="support-types-label">
                 <i class="fas fa-hands-helping"></i>
                 Support Needed:
               </div>
               <div class="support-tags">
                 <span 
-                  v-for="type in alert.support_types" 
+                  v-for="type in getSupportTypesFromMetadata(alert)" 
                   :key="type"
                   class="support-tag"
                   :class="getSupportTypeClass(type)"
@@ -212,8 +212,8 @@
           </button>
           
           <button 
-            v-if="alert.phone"
-            @click="callClient(alert.phone)" 
+            v-if="alert.client_phone"
+            @click="callClient(alert.client_phone)" 
             class="btn btn-warning btn-sm"
           >
             <i class="fas fa-phone"></i>
@@ -279,26 +279,26 @@
                 <label>Name:</label>
                 <span>{{ selectedAlert.client_name || 'Anonymous' }}</span>
               </div>
-              <div class="detail-item" v-if="selectedAlert.phone">
+              <div class="detail-item" v-if="selectedAlert.client_phone">
                 <label>Phone:</label>
-                <span>{{ selectedAlert.phone }}</span>
+                <span>{{ selectedAlert.client_phone }}</span>
               </div>
               <div class="detail-item" v-if="selectedAlert.location">
                 <label>Location:</label>
                 <span>{{ selectedAlert.location }}</span>
               </div>
-              <div class="detail-item" v-if="selectedAlert.preferred_contact_time">
+              <div class="detail-item" v-if="getPreferredContactTime(selectedAlert)">
                 <label>Preferred Contact Time:</label>
-                <span>{{ formatContactTime(selectedAlert.preferred_contact_time) }}</span>
+                <span>{{ formatContactTime(getPreferredContactTime(selectedAlert)) }}</span>
               </div>
             </div>
           </div>
 
-          <div class="detail-section" v-if="selectedAlert.support_types && selectedAlert.support_types.length > 0">
+          <div class="detail-section" v-if="getSupportTypesFromMetadata(selectedAlert).length > 0">
             <h4>Support Types Requested</h4>
             <div class="support-types-detail">
               <span 
-                v-for="type in selectedAlert.support_types" 
+                v-for="type in getSupportTypesFromMetadata(selectedAlert)" 
                 :key="type"
                 class="support-tag large"
                 :class="getSupportTypeClass(type)"
@@ -385,26 +385,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@/types'
 
-// Mock data structure for crisis alerts
+// Crisis alert structure matching Supabase schema
 interface CrisisAlert {
   id: string
   title?: string
   description: string
-  priority: 'critical' | 'high' | 'medium'
-  status: 'pending' | 'assigned' | 'in_progress' | 'resolved'
+  priority: 'critical' | 'high' | 'medium' | 'low'
+  status: 'pending' | 'assigned' | 'in_progress' | 'resolved' | 'escalated'
+  client_id?: string
   client_name?: string
-  phone?: string
+  client_phone?: string
+  client_email?: string
   location?: string
-  support_types?: string[]
-  preferred_contact_time?: string
-  created_at: string
-  assigned_counselor?: User
+  crisis_type?: string
+  is_immediate_danger?: boolean
+  needs_medical_attention?: boolean
+  needs_legal_help?: boolean
+  needs_financial_assistance?: boolean
+  needs_travel_help?: boolean
+  assigned_counselor_id?: string
   assigned_at?: string
+  assigned_by?: string
   resolved_at?: string
+  resolved_by?: string
+  resolution_notes?: string
+  metadata?: any
+  created_at: string
+  updated_at?: string
+  assigned_counselor?: User
   responses?: Array<{
     id: string
     counselor_name: string
@@ -412,6 +425,9 @@ interface CrisisAlert {
     created_at: string
   }>
 }
+
+// Responsive layout
+const { viewClasses, setupResponsiveLayout } = useResponsiveLayout()
 
 // Data
 const alerts = ref<CrisisAlert[]>([])
@@ -482,7 +498,7 @@ const filteredAlerts = computed(() => {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(a => 
       a.client_name?.toLowerCase().includes(query) ||
-      a.phone?.includes(query) ||
+      a.client_phone?.includes(query) ||
       a.description.toLowerCase().includes(query) ||
       a.location?.toLowerCase().includes(query)
     )
@@ -492,7 +508,7 @@ const filteredAlerts = computed(() => {
   filtered.sort((a, b) => {
     switch (sortBy.value) {
       case 'priority':
-        const priorityOrder = { critical: 3, high: 2, medium: 1 }
+        const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 }
         return priorityOrder[b.priority] - priorityOrder[a.priority]
       case 'response_time':
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -656,7 +672,7 @@ const exportAlerts = () => {
     priority: alert.priority,
     status: alert.status,
     client_name: alert.client_name,
-    phone: alert.phone,
+    phone: alert.client_phone,
     location: alert.location,
     created_at: alert.created_at,
     assigned_counselor: alert.assigned_counselor?.name,
@@ -792,6 +808,32 @@ const formatContactTime = (time: string) => {
   return timeMap[time] || 'Any time'
 }
 
+const getSupportTypesFromMetadata = (alert: CrisisAlert): string[] => {
+  if (!alert.metadata) return []
+  
+  const types: string[] = []
+  const metadata = alert.metadata
+  
+  // Extract support types from boolean fields in metadata
+  if (metadata.needs_abortion_access) types.push('abortion_access')
+  if (metadata.needs_emotional_support) types.push('emotional_support')
+  if (metadata.needs_financial_assistance) types.push('financial_assistance')
+  if (metadata.needs_travel_assistance) types.push('travel_assistance')
+  if (metadata.needs_legal_support) types.push('legal_support')
+  if (metadata.needs_safety_concerns) types.push('safety_concerns')
+  
+  // Also check for support_types array if it exists
+  if (metadata.support_types && Array.isArray(metadata.support_types)) {
+    types.push(...metadata.support_types)
+  }
+  
+  return types
+}
+
+const getPreferredContactTime = (alert: CrisisAlert): string => {
+  return alert.metadata?.preferred_contact_time || ''
+}
+
 // Lifecycle
 onMounted(() => {
   loadAlerts()
@@ -802,6 +844,33 @@ onMounted(() => {
 <style scoped>
 .crisis-alerts {
   padding: 2rem;
+  background: #FDE2E2;
+  min-height: 100vh;
+  position: fixed;
+  top: 60px;
+  left: 280px;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  transition: left 0.3s ease, padding 0.3s ease;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 1023px) {
+  .crisis-alerts {
+    left: 0 !important;
+    top: 80px !important; /* Mobile header height */
+    bottom: 80px !important; /* Mobile bottom nav */
+    padding: 1rem !important;
+  }
+}
+
+/* Sidebar state detection */
+@media (min-width: 1024px) {
+  /* When sidebar is collapsed (70px wide) */
+  .crisis-alerts.sidebar-collapsed {
+    left: 70px;
+  }
 }
 
 .header {
